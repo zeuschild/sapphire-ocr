@@ -161,17 +161,17 @@ public class OCRNetwork implements Serializable {
         net.prepareIdeal();
         net.train();
 
-        net.setCurrentImage("b.png");
-        net.setResult('B');
-        net.prepareInput();
-        net.prepareIdeal();
-        net.train();
-
-        net.setCurrentImage("c.png");
-        net.setResult('C');
-        net.prepareInput();
-        net.prepareIdeal();
-        net.train();
+//        net.setCurrentImage("b.png");
+//        net.setResult('B');
+//        net.prepareInput();
+//        net.prepareIdeal();
+//        net.train();
+//
+//        net.setCurrentImage("c.png");
+//        net.setResult('C');
+//        net.prepareInput();
+//        net.prepareIdeal();
+//        net.train();
 
         net.setCurrentImage("a1.png");
         net.prepareInput();
