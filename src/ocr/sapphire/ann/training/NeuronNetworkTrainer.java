@@ -19,6 +19,8 @@
  */
 package ocr.sapphire.ann.training;
 
+import com.esotericsoftware.yamlbeans.YamlWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import ocr.sapphire.ann.OCRNetwork;
@@ -32,14 +34,10 @@ import ocr.sapphire.sample.ProcessedSampleReader;
  */
 public class NeuronNetworkTrainer {
 
-    public static final String TRAINING_FILE = "training.yaml";
-    public static final String VALIDATE_FILE = "validate.yaml";
-
     /**
      * How many iteration before errors are evaluauted and conditions are checked
      */
     public static final int EVALUATE_RATE = 100;
-
     /**
      * How many negative iteration (iteration with higher error than previous
      * iteration) before we stop the algorithm
@@ -47,8 +45,13 @@ public class NeuronNetworkTrainer {
     public static final int NEGATIVE_ITERATION_BEFORE_STOP = 2000;
     private OCRNetwork ann;
     private OCRNetwork bestNetwork = null;
+    private String trainingFile;
+    private String validateFile;
 
-    public NeuronNetworkTrainer() throws IOException {
+    public NeuronNetworkTrainer(String trainingFile, String validateFile)
+            throws IOException {
+        this.trainingFile = trainingFile;
+        this.validateFile = validateFile;
         ann = new OCRNetwork();
     }
 
@@ -58,8 +61,9 @@ public class NeuronNetworkTrainer {
         double previousValidateError = 1;
         double negativeIterationCounter = 0;
         int iteration = 0;
-        outerFor: for (;;) {
-            ProcessedSampleReader training = new ProcessedSampleReader(TRAINING_FILE);
+        outerFor:
+        for (;;) {
+            ProcessedSampleReader training = new ProcessedSampleReader(trainingFile);
             ProcessedSample sample;
             while ((sample = training.read()) != null) {
                 ann.train(sample);
@@ -92,7 +96,7 @@ public class NeuronNetworkTrainer {
     }
 
     private double validate() throws IOException {
-        ProcessedSampleReader validate = new ProcessedSampleReader(VALIDATE_FILE);
+        ProcessedSampleReader validate = new ProcessedSampleReader(validateFile);
         double totalError = 0;
         int counter = 0;
         ProcessedSample sample = null;
@@ -104,6 +108,16 @@ public class NeuronNetworkTrainer {
         return totalError / counter;
     }
 
-    public static void main(String[] args) {
+    public OCRNetwork getBestNetwork() {
+        return bestNetwork;
+    }
+
+    public static void main(String[] args) throws IOException {
+        NeuronNetworkTrainer trainer = new NeuronNetworkTrainer(
+                "training.yaml", "validate.yaml");
+        trainer.run();
+        YamlWriter writer = new YamlWriter(new FileWriter("network.yaml"));
+        writer.write(trainer.getBestNetwork());
+        writer.close();
     }
 }
