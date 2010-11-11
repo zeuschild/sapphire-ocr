@@ -14,17 +14,18 @@ import java.io.*;
 import java.awt.image.*;
 import javax.imageio.*;
 import ocr.sapphire.image.ImagePreprocessor;
+import ocr.sapphire.sample.ProcessedSample;
 
-public class OCRNetwork {
+public class OCRNetwork implements Serializable {
     private Network network;
-    private ImagePreprocessor preprocessor;
-    private BufferedImage currentImage;
+    private transient ImagePreprocessor preprocessor;
+    private transient BufferedImage currentImage;
 
-    private double input[];
-    private double ideal[];
-    private int inputCount, outputCount;
+    private transient double input[];
+    private transient double ideal[];
+    private transient int inputCount, outputCount;
 
-    private char result;
+    private transient char result;
 
     public OCRNetwork() {
         preprocessor = new ImagePreprocessor(6, 15);
@@ -116,8 +117,39 @@ public class OCRNetwork {
         return (char) code;
     }
 
+    public double[] recognize(double[] input) {
+        return network.recognize(input);
+    }
+
+    /**
+     * Compute error for the last call of recognize in comparison to
+     * specified ideal output
+     * @param idealOutput
+     * @return
+     */
+    public double getError(double[] idealOutput) {
+        return Math.random();
+    }
+
     public void train() {
         network.train(input, ideal);
+    }
+
+    /**
+     * Train the network based on specified sample.
+     * @param sample
+     */
+    public void train(ProcessedSample sample) {
+        network.train(sample.getInputs(), sample.getOutputs());
+    }
+
+    /**
+     * TODO: implement it!!!
+     * Return the error of the last <code>train()</code> call.
+     * @return
+     */
+    public double getError() {
+       return Math.random();
     }
 
     public static void main(String args[]) {
@@ -157,7 +189,5 @@ public class OCRNetwork {
         System.out.println(net.recognize());
 
     }
-
-
 
 }

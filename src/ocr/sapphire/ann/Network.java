@@ -5,17 +5,18 @@
 
 package ocr.sapphire.ann;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
  *
  * @author Do Bich Ngoc
  */
-public class Network {
+public class Network implements Serializable {
+
     private int layerNumber;
     private int size[];
     private double rate = 0.2;
-
     private ArrayList<Layer> layer;
     private ArrayList<WeightMatrix> weight;
 
@@ -119,7 +120,5 @@ public class Network {
             System.out.println(net.getOutput()[0] + " ");
         }
     }
-
-    
 
 }
