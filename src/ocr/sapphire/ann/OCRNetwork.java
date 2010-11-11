@@ -102,7 +102,7 @@ public class OCRNetwork implements Serializable {
 
     public char recognize() {
         network.recognize(input);
-        System.out.println(Arrays.toString(network.getOutput()));
+//        System.out.println(Arrays.toString(network.getOutput()));
         double[] output = network.getOutput();
         StringBuilder s = new StringBuilder();
         for (int i = 0; i < outputCount; i++) {
@@ -149,7 +149,14 @@ public class OCRNetwork implements Serializable {
      * @return
      */
     public double getError() {
-       return Math.random();
+        double error = 0, delta = 0;
+        double[] output = network.getOutput();
+        for (int i = 0; i < outputCount; i++) {
+            delta = ideal[i] - output[i];
+            error += delta * delta;
+        }
+        error *= 0.5;
+       return error;
     }
 
     public static void main(String args[]) {
@@ -159,7 +166,10 @@ public class OCRNetwork implements Serializable {
         net.setResult('A');
         net.prepareInput();
         net.prepareIdeal();
-        net.train();
+        for (int i = 0; i < 10; i++) {
+            net.train();
+        }
+        System.out.println(net.getError());
 
 //        net.setCurrentImage("b.png");
 //        net.setResult('B');
