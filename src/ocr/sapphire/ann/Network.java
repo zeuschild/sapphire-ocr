@@ -65,6 +65,10 @@ public class Network implements Serializable {
         layer.get(layerNumber - 1).setPrevWeight(weight.get(layerNumber - 2));
     }
 
+    public double getRate() {
+        return rate;
+    }
+
     public void setRate(double rate) {
         this.rate = rate;
     }
@@ -76,7 +80,7 @@ public class Network implements Serializable {
         }
     }
 
-    private void backPropangation(double ideal[]) {
+    private void backPropagation(double ideal[]) {
         layer.get(layerNumber - 1).computeError(ideal);
         for (int i = layerNumber - 2; i >= 0; i--) {
             layer.get(i).computeError();
@@ -101,7 +105,7 @@ public class Network implements Serializable {
 
     public void train(double input[], double ideal[]) {
         feedFoward(input);
-        backPropangation(ideal);
+        backPropagation(ideal);
         updateWeight();
     }
 
@@ -134,7 +138,7 @@ public class Network implements Serializable {
         double ideal[] = {1};
         for (int i = 0; i < 84; i++) {
             net.feedFoward(input);
-            net.backPropangation(ideal);
+            net.backPropagation(ideal);
             net.updateWeight();
             System.out.println(net.getOutput()[0] + " ");
         }
