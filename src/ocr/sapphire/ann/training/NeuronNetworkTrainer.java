@@ -23,8 +23,12 @@ import com.esotericsoftware.yamlbeans.YamlWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
 import ocr.sapphire.ann.OCRNetwork;
-import ocr.sapphire.ann.Utils;
+import ocr.sapphire.Utils;
+import ocr.sapphire.sample.CharacterProcessedSample;
 import ocr.sapphire.sample.ProcessedSample;
 import ocr.sapphire.sample.ProcessedSampleReader;
 
@@ -37,7 +41,7 @@ public class NeuronNetworkTrainer {
     /**
      * How many iteration before errors are evaluauted and conditions are checked
      */
-    public static final int EVALUATE_RATE = 100;
+    public static final int EVALUATE_RATE = 200;
     /**
      * How many negative iteration (iteration with higher error than previous
      * iteration) before we stop the algorithm
@@ -45,79 +49,131 @@ public class NeuronNetworkTrainer {
     public static final int NEGATIVE_ITERATION_BEFORE_STOP = 2000;
     private OCRNetwork ann;
     private OCRNetwork bestNetwork = null;
-    private String trainingFile;
-    private String validateFile;
+    private String reportFile;
+    private List<ProcessedSample> validateSet;
+    private List<ProcessedSample> trainingSet;
+    private double performance;
+    private double validateError;
 
-    public NeuronNetworkTrainer(String trainingFile, String validateFile)
+    public NeuronNetworkTrainer(String trainingFile, String validateFile, String reportFile)
             throws IOException {
-        this.trainingFile = trainingFile;
-        this.validateFile = validateFile;
+        this.trainingSet = readSamples(trainingFile);
+        //this.validateSet = readSamples(validateFile);
+        this.validateSet = readSamples(trainingFile);
+        this.reportFile = reportFile;
         ann = new OCRNetwork();
     }
 
-    public void run() throws IOException {
-        PrintWriter out = new PrintWriter("result.cvs");
-        double bestValidateError = 1;
-        double previousValidateError = 1;
-        double negativeIterationCounter = 0;
-        int iteration = 0;
-        outerFor:
-        for (;;) {
-            ProcessedSampleReader training = new ProcessedSampleReader(trainingFile);
-            ProcessedSample sample;
-            while ((sample = training.read()) != null) {
-                ann.train(sample);
-
-                if (++iteration % EVALUATE_RATE == 0) {
-                    double trainingError = ann.getError();
-                    double validateError = validate();
-                    out.println(iteration + "\t" + trainingError + "\t" + validateError);
-
-                    // save the best network if needed
-                    if (validateError < bestValidateError) {
-                        bestNetwork = Utils.copy(ann);
-                        bestValidateError = validateError;
-                    }
-
-                    // check the halt condition
-                    if (validateError < previousValidateError) {
-                        negativeIterationCounter += EVALUATE_RATE;
-                        if (negativeIterationCounter > NEGATIVE_ITERATION_BEFORE_STOP) {
-                            break outerFor;
-                        }
-                    } else {
-                        negativeIterationCounter = 0;
-                    }
-                    previousValidateError = validateError;
-                }
+    private List<ProcessedSample> readSamples(String path) throws IOException {
+        List<ProcessedSample> samples = new LinkedList<ProcessedSample>();
+        ProcessedSampleReader reader = null;
+        try {
+            reader = new ProcessedSampleReader(path);
+            ProcessedSample sample = null;
+            while ((sample = reader.read()) != null) {
+                samples.add(sample);
+            }
+            return samples;
+        } finally {
+            if (reader != null) {
+                reader.close();
             }
         }
-        out.close();
     }
 
-    private double validate() throws IOException {
-        ProcessedSampleReader validate = new ProcessedSampleReader(validateFile);
-        double totalError = 0;
-        int counter = 0;
-        ProcessedSample sample = null;
-        while ((sample = validate.read()) != null) {
-            ann.recognize(sample.getInputs());
-            totalError += ann.getError(sample.getOutputs());
-            counter++;
+    public void run() throws IOException {
+        PrintWriter out = null;
+        try {
+            out = new PrintWriter(reportFile);
+            out.println("Iteration\tTraining error\tValidating error\tPerformance");
+
+            double bestValidateError = Double.MAX_VALUE;
+            double previousValidateError = 0;
+            double negativeIterationCounter = 0;
+            double totalIterationError = 0;
+            int iteration = 0;
+            outerFor:
+            for (;;) {
+                for (ProcessedSample sample : trainingSet) {
+                    ann.train(sample);
+                    totalIterationError += ann.getError();
+
+                    iteration++;
+
+                    if (iteration % EVALUATE_RATE == 0) {
+                        System.out.println(iteration);
+
+                        double trainingError = totalIterationError / EVALUATE_RATE;
+                        totalIterationError = 0;
+                        computeValidateErrorAndPerformance();
+                        out.format(Locale.FRENCH, "%d\t%f\t%f\t%f\n",
+                                iteration, trainingError, validateError, performance);
+
+                        // save the best network if needed
+                        if (validateError < bestValidateError) {
+                            bestNetwork = Utils.copy(ann);
+                            bestValidateError = validateError;
+                        }
+
+                        // check the halt condition
+                        if (validateError < previousValidateError) {
+                            negativeIterationCounter += EVALUATE_RATE;
+                            if (negativeIterationCounter > NEGATIVE_ITERATION_BEFORE_STOP) {
+                                break outerFor;
+                            }
+                        } else {
+                            negativeIterationCounter = 0;
+                        }
+                        previousValidateError = validateError;
+
+                        // for testing purpose
+                        if (iteration >= 50000) {
+                            return;
+                        }
+                    }
+                }
+            }
+        } finally {
+            if (out != null) {
+                out.close();
+            }
         }
-        return totalError / counter;
+    }
+
+    private void computeValidateErrorAndPerformance() throws IOException {
+        int correctCount = 0;
+        double totalError = 0;
+        for (ProcessedSample sample : validateSet) {
+            double[] output = ann.recognize(sample.getInputs());
+            if (Utils.toChar(output) == ((CharacterProcessedSample)sample).getCharacter()) {
+                correctCount++;
+            }
+            totalError += ann.getError(sample.getOutputs());
+        }
+        performance = correctCount / (double)validateSet.size();
+        validateError = totalError / validateSet.size();
     }
 
     public OCRNetwork getBestNetwork() {
         return bestNetwork;
     }
 
+    private static void writeNetwork(OCRNetwork network, String path) throws IOException {
+        YamlWriter writer = null;
+        try {
+            writer = new YamlWriter(new FileWriter(path), Utils.DEFAULT_YAML_CONFIG);
+            writer.write(network);
+        } finally {
+            if (writer != null) {
+                writer.close();
+            }
+        }
+    }
+
     public static void main(String[] args) throws IOException {
         NeuronNetworkTrainer trainer = new NeuronNetworkTrainer(
-                "training.yaml", "validate.yaml");
+                "training.yaml", "validate.yaml", "training.csv");
         trainer.run();
-        YamlWriter writer = new YamlWriter(new FileWriter("network.yaml"));
-        writer.write(trainer.getBestNetwork());
-        writer.close();
+        writeNetwork(trainer.getBestNetwork(), "network.yaml");
     }
 }

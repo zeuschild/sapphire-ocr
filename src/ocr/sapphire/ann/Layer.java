@@ -5,17 +5,23 @@
 
 package ocr.sapphire.ann;
 
+import java.io.Serializable;
+
 /**
  *
  * @author Do Bich Ngoc
  */
-public class Layer {
+public class Layer implements Serializable {
     private int size;
-    private double output[];
-    private double error[];
+    private transient double output[];
+    private transient double error[];
 
-    private Layer prevLayer, nextLayer;
-    private WeightMatrix prevWeight, nextWeight;
+    private transient Layer prevLayer, nextLayer;
+    private transient WeightMatrix prevWeight, nextWeight;
+
+    public Layer() {
+        // for yamlbeans to serialize
+    }
 
     public Layer(int size) {
         this.size = size;

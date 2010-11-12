@@ -10,7 +10,7 @@ package ocr.sapphire.ann;
  * @author Do Bich Ngoc
  */
 public class Sigmoid {
-    private static final double MAX_RANGE = 25;
+    private static final double MAX_RANGE = 20;
     private static final int SIZE = 5001;
     private static double sigmoid[];
     private static double delta;

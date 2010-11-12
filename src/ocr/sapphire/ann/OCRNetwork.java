@@ -1,6 +1,21 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright Sapphire-group 2010
+ *
+ * This file is part of sapphire-ocr.
+ *
+ * sapphire-ocr is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * sapphire-ocr is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with sapphire-ocr.  If not, see <http://www.gnu.org/licenses/>.
+ *
  */
 
 package ocr.sapphire.ann;
@@ -9,10 +24,10 @@ package ocr.sapphire.ann;
  *
  * @author Do Bich Ngoc
  */
-import java.util.Arrays;
 import java.io.*;
 import java.awt.image.*;
 import javax.imageio.*;
+import ocr.sapphire.Utils;
 import ocr.sapphire.image.ImagePreprocessor;
 import ocr.sapphire.sample.ProcessedSample;
 
@@ -28,11 +43,12 @@ public class OCRNetwork implements Serializable {
     private transient char result;
 
     public OCRNetwork() {
-        preprocessor = new ImagePreprocessor(6, 15);
-        network = new Network(90, 60, 16);
-        inputCount = 90;
+        preprocessor = new ImagePreprocessor(6, 10);
+        network = new Network(60, 40, 16);
+        network.setRate(0.5);
+        inputCount = 60;
         outputCount = 16;
-        input = new double[90];
+        input = new double[inputCount];
         ideal = new double[16];
     }
 
@@ -86,35 +102,14 @@ public class OCRNetwork implements Serializable {
     }
 
     public void prepareIdeal() {
-        long code = (int) result;
-        String binString = Long.toBinaryString(code);
-        int j = 15;
-        for (int i = binString.length() - 1; i >= 0; i--) {
-            if (binString.charAt(i) == '0') {
-                ideal[j] = 0;
-            }
-            else {
-                ideal[j] = 1;
-            }
-            j--;
-        }
+        ideal = Utils.toDoubleArray(result);
     }
 
     public char recognize() {
         network.recognize(input);
 //        System.out.println(Arrays.toString(network.getOutput()));
         double[] output = network.getOutput();
-        StringBuilder s = new StringBuilder();
-        for (int i = 0; i < outputCount; i++) {
-            if (output[i] < 0.5) {
-                s.append("0");
-            }
-            else {
-                s.append("1");
-            }
-        }
-        long code = Long.valueOf(s.toString(), 2);
-        return (char) code;
+        return (char) Utils.toChar(output);
     }
 
     public double[] recognize(double[] input) {
@@ -123,12 +118,13 @@ public class OCRNetwork implements Serializable {
 
     /**
      * Compute error for the last call of recognize in comparison to
-     * specified ideal output
+     * specified ideal output.
      * @param idealOutput
      * @return
      */
     public double getError(double[] idealOutput) {
-        return Math.random();
+        this.ideal = idealOutput;
+        return getError();
     }
 
     public void train() {
@@ -144,7 +140,6 @@ public class OCRNetwork implements Serializable {
     }
 
     /**
-     * TODO: implement it!!!
      * Return the error of the last <code>train()</code> call.
      * @return
      */
@@ -162,38 +157,38 @@ public class OCRNetwork implements Serializable {
     public static void main(String args[]) {
         OCRNetwork net = new OCRNetwork();
 
-        net.setCurrentImage("a.png");
-        net.setResult('A');
-        net.prepareInput();
-        net.prepareIdeal();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
+            net.setCurrentImage("a.png");
+            net.setResult('A');
+            net.prepareInput();
+            net.prepareIdeal();
+            net.train();
+            System.out.println(net.getError());
+
+            net.setCurrentImage("b.png");
+            net.setResult('B');
+            net.prepareInput();
+            net.prepareIdeal();
+            net.train();
+
+            net.setCurrentImage("c.png");
+            net.setResult('C');
+            net.prepareInput();
+            net.prepareIdeal();
             net.train();
         }
-        System.out.println(net.getError());
 
-//        net.setCurrentImage("b.png");
-//        net.setResult('B');
-//        net.prepareInput();
-//        net.prepareIdeal();
-//        net.train();
-//
-//        net.setCurrentImage("c.png");
-//        net.setResult('C');
-//        net.prepareInput();
-//        net.prepareIdeal();
-//        net.train();
-
-        net.setCurrentImage("a1.png");
+        net.setCurrentImage("a.png");
         net.prepareInput();
         net.prepareIdeal();
         System.out.println(net.recognize());
 
-        net.setCurrentImage("b1.png");
+        net.setCurrentImage("b.png");
         net.prepareInput();
         net.prepareIdeal();
         System.out.println(net.recognize());
 
-        net.setCurrentImage("c1.png");
+        net.setCurrentImage("c.png");
         net.prepareInput();
         net.prepareIdeal();
         System.out.println(net.recognize());

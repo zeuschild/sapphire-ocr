@@ -7,21 +7,11 @@ import java.io.IOException;
 import ocr.sapphire.image.ImagePreprocessor;
 import ocr.sapphire.image.PreprocessorConfig;
 
-import com.esotericsoftware.yamlbeans.YamlConfig;
 import com.esotericsoftware.yamlbeans.YamlException;
 import com.esotericsoftware.yamlbeans.YamlWriter;
+import ocr.sapphire.Utils;
 
 public class ProcessedSampleWriter implements Closeable {
-
-	static final YamlConfig DEFAULT_YAML_CONFIG = new YamlConfig();
-
-	static {
-		DEFAULT_YAML_CONFIG.setPrivateFields(true);
-		DEFAULT_YAML_CONFIG.setClassTag("sample",
-				CharacterProcessedSample.class);
-		DEFAULT_YAML_CONFIG.setClassTag("config",
-				PreprocessorConfig.class);
-	}
 
 	PreprocessorConfig config;
 	private YamlWriter yamlWriter;
@@ -32,7 +22,7 @@ public class ProcessedSampleWriter implements Closeable {
 		this.config = config;
 		processor = new ImagePreprocessor(config.getComponentCount(),
 				config.getSeriesLength());
-		yamlWriter = new YamlWriter(new FileWriter(path), DEFAULT_YAML_CONFIG);
+		yamlWriter = new YamlWriter(new FileWriter(path), Utils.DEFAULT_YAML_CONFIG);
 		yamlWriter.write(config);
 	}
 
