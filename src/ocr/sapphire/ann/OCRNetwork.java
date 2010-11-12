@@ -158,6 +158,7 @@ public class OCRNetwork implements Serializable {
         OCRNetwork net = new OCRNetwork();
 
         for (int i = 0; i < 20; i++) {
+
             net.setCurrentImage("a.png");
             net.setResult('A');
             net.prepareInput();
@@ -171,11 +172,11 @@ public class OCRNetwork implements Serializable {
             net.prepareIdeal();
             net.train();
 
-            net.setCurrentImage("c.png");
-            net.setResult('C');
-            net.prepareInput();
-            net.prepareIdeal();
-            net.train();
+//            net.setCurrentImage("c.png");
+//            net.setResult('C');
+//            net.prepa reInput();
+//            net.prepareIdeal();
+//            net.train();
         }
 
         net.setCurrentImage("a.png");
