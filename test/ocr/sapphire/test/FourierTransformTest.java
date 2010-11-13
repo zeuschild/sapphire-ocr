@@ -50,11 +50,13 @@ public class FourierTransformTest {
             BufferedImage reverseImage = preprocessor.reverseToSingleImage();
             File output = new File("/home/cumeo89/HUT/hk7/tri tue nhan tao/btl/data/reverse/" + files[i].getName());
             ImageIO.write(reverseImage, "PNG", output);
+            File edgeFile =  new File("/home/cumeo89/HUT/hk7/tri tue nhan tao/btl/data/edge/" + files[i].getName());
+            ImageIO.write(preprocessor.getEdgeImage(), "PNG", edgeFile);
         }
     }
 
     private void singleTransform(String character) throws IOException {
-        ImagePreprocessor preprocessor = new ImagePreprocessor(6, 15);
+        ImagePreprocessor preprocessor = new ImagePreprocessor(6, 50);
         BufferedImage image = ImageIO.read(new File(character + ".png"));
         preprocessor.process(image);
         ImageIO.write(preprocessor.getEdgeImage(), "PNG", new File(character + "-edges.png"));
@@ -62,6 +64,7 @@ public class FourierTransformTest {
         for (BufferedImage reverseImage : preprocessor.reverse()) {
             ImageIO.write(reverseImage, "PNG", new File(character + "-reverse" + (++i) + ".png"));
         }
+        ImageIO.write(preprocessor.reverseToSingleImage(), "PNG", new File(character + "-reverse.png"));
     }
 
     @Test

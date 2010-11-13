@@ -34,6 +34,11 @@ import javax.imageio.ImageIO;
 import org.apache.commons.lang.ArrayUtils;
 
 import com.tomgibara.CannyEdgeDetector;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import static com.tomgibara.CannyEdgeDetector.BLACK;
+import static com.tomgibara.CannyEdgeDetector.WHITE;
 
 public class ImagePreprocessor {
 
@@ -48,6 +53,9 @@ public class ImagePreprocessor {
         super();
         this.componentCount = componentCount;
         this.seriesLength = seriesLength;
+        this.detector = new CannyEdgeDetector();
+        detector.setLowThreshold(0.1f);
+        detector.setHighThreshold(0.2f);
     }
 
     public int getSeriesLength() {
@@ -58,80 +66,155 @@ public class ImagePreprocessor {
         return componentCount;
     }
 
-    private BufferedImage findEdges(BufferedImage image) {
-        CannyEdgeDetector detector = new CannyEdgeDetector();
-        detector.setLowThreshold(0.2f);
-        detector.setHighThreshold(0.9f);
+    private int[] findEdges(BufferedImage image) {
         detector.setSourceImage(image);
         detector.process();
-        return detector.getEdgesImage();
+        return detector.getData();
     }
 
-    private Point[][] findEdgePoints(BufferedImage edgeImage) {
-        SortedMap<Integer, Deque<Point>> components = new TreeMap<Integer, Deque<Point>>();
-        WritableRaster raster = edgeImage.getRaster();
-        height = edgeImage.getHeight();
-        width = edgeImage.getWidth();
+    private Point[][] findEdgePoints(int[] edgeData) {
+        List<Deque<Point>> components = new ArrayList<Deque<Point>>();
+        // find open paths
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                int color = raster.getSample(x, y, 0);
-                if (color >= 255) {
-                    Deque<Point> points = findConnectedComponent(raster, x, y);
-                    components.put(-points.size(), points);
+                int color = edgeData[x + y * width];
+                if (color == BLACK) {
+                    if (getAdjacentCount(edgeData, x, y) >= 2) {
+                        continue;
+                    }
+                    Deque<Point> points = findConnectedComponent(edgeData, x, y);
+                    components.add(points);
+                }
+            }
+        }
+        // find close paths
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int color = edgeData[x + y * width];
+                if (color == BLACK) {
+                    if (getAdjacentCount(edgeData, x, y) != 2) {
+                        continue;
+                    }
+
+                    edgeData[x + y * width] = WHITE;
+                    Deque<Point> firstPart = null, secondPart = null;
+                    for (int k = 0; k < DX.length; k++) {
+                        int x2 = x + DX[k];
+                        int y2 = y + DY[k];
+                        if (x2 < 0 || x2 >= width || y2 < 0 || y2 >= height) {
+                            continue;
+                        }
+                        if (edgeData[x2 + y2 * width] == BLACK) {
+                            Deque<Point> points = findConnectedComponent(edgeData, x2, y2);
+                            if (firstPart == null) {
+                                firstPart = points;
+                            } else {
+                                secondPart = points;
+                            }
+                        }
+                    }
+                    firstPart.addFirst(new Point(x, y));
+                    if (secondPart != null) { // the path is not closed
+                        for (Point p : secondPart) {
+                            firstPart.addFirst(p);
+                        }
+                    }
+                    components.add(firstPart);
                 }
             }
         }
 
-        int foundComponentCount = Math.min(componentCount, components.size());
+        // try to connect some paths
+        for (int i = 0; i < components.size() - 1; i++) {
+            for (int j = i + 1; j < components.size();) {
+                Deque<Point> a = components.get(i);
+                Deque<Point> b = components.get(j);
+                int d0 = d(a.getFirst(), a.getLast()) + d(b.getFirst(), b.getLast());
+                int d1 = d(a.getFirst(), b.getFirst()) + d(a.getLast(), b.getLast());
+                int d2 = d(a.getFirst(), b.getLast()) + d(a.getLast(), b.getFirst());
+                if (d1 <= d0 && d1 <= d2) {
+                    for (Point p : b) {
+                        a.addFirst(p);
+                    }
+                    components.remove(j);
+                } else if (d2 <= d0 && d2 <= d1) {
+                    for (Point p : b) {
+                        a.addLast(p);
+                    }
+                    components.remove(j);
+                } else {
+                    j++;
+                }
+            }
+        }
+
+        // choose (componentCount) biggest components
+        SortedMap<Integer, Deque<Point>> componentMap = new TreeMap<Integer, Deque<Point>>();
+        for (Deque<Point> c : components) {
+            componentMap.put(-c.size(), c);
+        }
+        int foundComponentCount = Math.min(componentCount, componentMap.size());
         Point[][] componentArr = new Point[foundComponentCount][];
         for (int c = 0; c < foundComponentCount; c++) {
-            int key = components.firstKey();
-            componentArr[c] = new Point[components.get(key).size()];
-            components.get(key).toArray(componentArr[c]);
-            components.remove(key);
+            int key = componentMap.firstKey();
+            componentArr[c] = new Point[componentMap.get(key).size()];
+            componentMap.get(key).toArray(componentArr[c]);
+            componentMap.remove(key);
         }
         return componentArr;
     }
 
-    private Deque<Point> findConnectedComponent(WritableRaster raster, int x, int y) {
-        Deque<Point> points = new LinkedList<Point>();
+    private int getAdjacentCount(int[] edgeData, int x, int y) {
+        int adjacentCounter = 0;
+        for (int k = 0; k < DX.length; k++) {
+            int x2 = x + DX[k];
+            int y2 = y + DY[k];
+            if (x2 < 0 || x2 >= width || y2 < 0 || y2 >= height) {
+                continue;
+            }
+            if (edgeData[x2 + y2 * width] == BLACK) {
+                adjacentCounter++;
+            }
+        }
+        return adjacentCounter;
+    }
 
+    /**
+     * Compute distance from a to b
+     * @param a
+     * @param b
+     * @return
+     */
+    private static int d(Point a, Point b) {
+        return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+    }
+
+    private Deque<Point> findConnectedComponent(int[] edgeData, int x, int y) {
+        Deque<Point> points = new LinkedList<Point>();
         Deque<Point> stack = new LinkedList<Point>();
-        stack.push(new Point(x, y));
+
+        edgeData[x + y * width] = WHITE;
+        Point initialPoint = new Point(x, y);
+        points.add(initialPoint);
+        stack.push(initialPoint);
 
         while (!stack.isEmpty()) {
-            // add to closer end
             Point point = stack.pop();
-            if (points.size() >= 2) {
-                if (distance2(point, points.getFirst()) < distance2(point,
-                        points.getLast())) {
-                    points.addFirst(point);
-                } else {
-                    points.addLast(point);
-                }
-            } else {
-                points.add(point);
-            }
-            raster.setSample(point.x, point.y, 0, 0);
-
             for (int k = 0; k < 8; k++) {
                 int x2 = point.x + DX[k];
                 int y2 = point.y + DY[k];
-                if (x2 < 0 || y2 < 0 || x2 >= raster.getWidth()
-                        || y2 >= raster.getHeight()) {
+                if (x2 < 0 || y2 < 0 || x2 >= width || y2 >= height) {
                     continue;
                 }
-                if (raster.getSample(x2, y2, 0) >= 255) {
-                    raster.setSample(x2, y2, 0, 0);
-                    stack.push(new Point(x2, y2));
+                if (edgeData[x2 + y2 * width] == BLACK) {
+                    edgeData[x2 + y2 * width] = WHITE;
+                    Point point2 = new Point(x2, y2);
+                    points.add(point2);
+                    stack.push(point2);
                 }
             }
         }
         return points;
-    }
-
-    private long distance2(Point a, Point b) {
-        return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
     }
 
     private double[][] fourierTransform(Point[] points, int width, int height) {
@@ -142,32 +225,31 @@ public class ImagePreprocessor {
         double[] b_i = new double[seriesLength]; // phan ao cua b
         double TWO_PI_OVER_N = 2 * Math.PI / N;
 
-        for (int k = 0; k < seriesLength; k++) {
-            for (int n = 0; n < N; n++) {
-                long kn = k * n;
-                double cosFactor = Math.cos(TWO_PI_OVER_N * kn);
-                double sinFactor = Math.sin(TWO_PI_OVER_N * kn);
-                // chuan hoa toa do
-                double x = points[n].x / (double) width;
-                double y = points[n].y / (double) height;
+        for (int n = 0; n < seriesLength; n++) {
+            for (int k = 0; k < N; k++) {
+                double phi = TWO_PI_OVER_N * k * n;
+                double cosFactor = Math.cos(phi);
+                double sinFactor = Math.sin(phi);
                 // tinh cac he so
-                a_r[k] += cosFactor * x;
-                a_i[k] += sinFactor * x;
-                b_r[k] += cosFactor * y;
-                b_i[k] += sinFactor * y;
+                a_r[n] += cosFactor * points[k].x;
+                a_i[n] += sinFactor * points[k].x;
+                b_r[n] += cosFactor * points[k].y;
+                b_i[n] += sinFactor * points[k].y;
             }
-            a_r[k] = a_r[k] / N;
-            a_i[k] = -a_i[k] / N;
-            b_r[k] = b_r[k] / N;
-            b_i[k] = -b_i[k] / N;
+            a_r[n] = a_r[n] / N / width;
+            a_i[n] = -a_i[n] / N / width;
+            b_r[n] = b_r[n] / N / height;
+            b_i[n] = -b_i[n] / N / height;
         }
 
         return new double[][]{a_r, a_i, b_r, b_i};
     }
 
     public double[][][] process(BufferedImage image) {
-        edgeImage = findEdges(image);
-        foundComponents = findEdgePoints(edgeImage);
+        height = image.getHeight();
+        width = image.getWidth();
+        int[] edgeData = findEdges(image);
+        foundComponents = findEdgePoints(edgeData);
         coefficients = new double[foundComponents.length][][];
         for (int c = 0; c < foundComponents.length; c++) {
             coefficients[c] = fourierTransform(foundComponents[c],
@@ -180,9 +262,9 @@ public class ImagePreprocessor {
         BufferedImage[] images = new BufferedImage[foundComponents.length];
 
         for (int c = 0; c < foundComponents.length; c++) {
-            images[c] = new BufferedImage(width, height,
-                    BufferedImage.TYPE_BYTE_BINARY);
-            WritableRaster raster = images[c].getRaster();
+            int[] pixels = new int[width * height];
+            Arrays.fill(pixels, WHITE);
+
             final int N = foundComponents[c].length;
             double a_r[] = coefficients[c][0];
             double a_i[] = coefficients[c][1];
@@ -194,27 +276,33 @@ public class ImagePreprocessor {
             for (int n = 0; n < N; n++) {
                 double x = 0, y = 0;
                 for (int k = 0; k < seriesLength; k++) {
-                    long kn = k * n;
-                    double cosFactor = Math.cos(TWO_PI_OVER_N * kn);
-                    double sinFactor = Math.sin(TWO_PI_OVER_N * kn);
-                    x += (a_r[k] * cosFactor - a_i[k] * sinFactor) * width;
-                    y += (b_r[k] * cosFactor - b_i[k] * sinFactor) * height;
+                    double phi = TWO_PI_OVER_N * k * n;
+                    double cosFactor = Math.cos(phi);
+                    double sinFactor = Math.sin(phi);
+                    x += a_r[k] * cosFactor + a_i[k] * sinFactor;
+                    y += b_r[k] * cosFactor + b_i[k] * sinFactor;
                 }
+                x *= width;
+                y *= height;
                 if (x >= 0 && x < width && y >= 0 && y < height) {
-                    raster.setSample((int) x, (int) y, 0, 255);
+                    pixels[(int) x + width * (int) y] = BLACK;
                 } else {
                     System.out.println("(" + x + ", " + y + "); size=(" + width + ", " + height + ")");
                 }
             }
+
+            images[c] = new BufferedImage(width, height,
+                    BufferedImage.TYPE_INT_ARGB);
+            WritableRaster raster = images[c].getRaster();
+            raster.setDataElements(0, 0, width, height, pixels);
         }
 
         return images;
     }
 
     public BufferedImage reverseToSingleImage() {
-        BufferedImage image = new BufferedImage(width, height,
-                BufferedImage.TYPE_BYTE_BINARY);
-        WritableRaster raster = image.getRaster();
+        int[] pixels = new int[width * height];
+        Arrays.fill(pixels, WHITE);
 
         for (int c = 0; c < foundComponents.length; c++) {
             final int N = foundComponents[c].length;
@@ -228,20 +316,26 @@ public class ImagePreprocessor {
             for (int n = 0; n < N; n++) {
                 double x = 0, y = 0;
                 for (int k = 0; k < seriesLength; k++) {
-                    long kn = k * n;
-                    double cosFactor = Math.cos(TWO_PI_OVER_N * kn);
-                    double sinFactor = Math.sin(TWO_PI_OVER_N * kn);
-                    x += (a_r[k] * cosFactor - a_i[k] * sinFactor) * width;
-                    y += (b_r[k] * cosFactor - b_i[k] * sinFactor) * height;
+                    double phi = TWO_PI_OVER_N * k * n;
+                    double cosFactor = Math.cos(phi);
+                    double sinFactor = Math.sin(phi);
+                    x += a_r[k] * cosFactor + a_i[k] * sinFactor;
+                    y += b_r[k] * cosFactor + b_i[k] * sinFactor;
                 }
+                x *= width;
+                y *= height;
                 if (x >= 0 && x < width && y >= 0 && y < height) {
-                    raster.setSample((int) x, (int) y, 0, 255);
+                    pixels[(int) x + width * (int) y] = BLACK;
                 } else {
                     System.out.println("(" + x + ", " + y + "); size=(" + width + ", " + height + ")");
                 }
             }
         }
 
+        BufferedImage image = new BufferedImage(width, height,
+                BufferedImage.TYPE_INT_ARGB);
+        WritableRaster raster = image.getRaster();
+        raster.setDataElements(0, 0, width, height, pixels);
         return image;
     }
 
@@ -269,12 +363,11 @@ public class ImagePreprocessor {
     private static final int[] DY = {-1, 0, 1, 0, -1, 1, 1, -1};
     private int width; // chiều rộng của ảnh trong lần cuối cùng gọi process
     private int height; // chiều rộng của ảnh trong lần cuối cùng gọi process
-    private double[][][] coefficients; // các hệ số tìm được trong lần cuối cùng
-    // gọi process
-    private BufferedImage edgeImage;
+    private double[][][] coefficients; // các hệ số tìm được trong lần cuối cùng gọi process
+    private CannyEdgeDetector detector;
     private Point[][] foundComponents;
 
     public BufferedImage getEdgeImage() {
-        return edgeImage;
+        return detector.getEdgesImage();
     }
 }

@@ -10,7 +10,8 @@ import java.util.Arrays;
  * 
  * <p>This class provides a configurable implementation of the Canny edge
  * detection algorithm. This classic algorithm has a number of shortcomings,
- * but remains an effective tool in many scenarios. <em>This class is designed
+ * but remains an effective tool +) {
+                int i2 = x + y *in many scenarios. <em>This class is designed
  * for single threaded use only.</em></p>
  * 
  * <p>Sample usage:</p>
@@ -453,10 +454,10 @@ public class CannyEdgeDetector {
     }
 
     private void follow(int x1, int y1, int i1, int threshold) {
-        int x0 = x1 == 0 ? x1 : x1 - 1;
-        int x2 = x1 == width - 1 ? x1 : x1 + 1;
-        int y0 = y1 == 0 ? y1 : y1 - 1;
-        int y2 = y1 == height - 1 ? y1 : y1 + 1;
+        int x0 = (x1 == 0 ? x1 : x1 - 1);
+        int x2 = (x1 == width - 1 ? x1 : x1 + 1);
+        int y0 = (y1 == 0 ? y1 : y1 - 1);
+        int y2 = (y1 == height - 1 ? y1 : y1 + 1);
 
         data[i1] = magnitude[i1];
         for (int x = x0; x <= x2; x++) {
@@ -474,7 +475,7 @@ public class CannyEdgeDetector {
 
     private void thresholdEdges() {
         for (int i = 0; i < picsize; i++) {
-            data[i] = data[i] > 0 ? -1 : 0xff000000;
+            data[i] = data[i] > 0 ? BLACK : WHITE;
         }
     }
 
@@ -548,4 +549,12 @@ public class CannyEdgeDetector {
         }
         edgesImage.getWritableTile(0, 0).setDataElements(0, 0, width, height, pixels);
     }
+
+    public int[] getData() {
+        return data;
+    }
+
+    public static final int BLACK = 0xff000000;
+    public static final int WHITE = -1;
+
 }
