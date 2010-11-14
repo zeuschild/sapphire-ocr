@@ -15,6 +15,7 @@ public class Layer implements Serializable {
     private int size;
     private transient double output[];
     private transient double error[];
+    private double biasWeight[];
 
     private transient Layer prevLayer, nextLayer;
     private transient WeightMatrix prevWeight, nextWeight;
@@ -27,6 +28,7 @@ public class Layer implements Serializable {
         this.size = size;
         output = new double[size];
         error = new double[size];
+        biasWeight = new double[size];
     }
 
     public int getSize() {
@@ -47,7 +49,7 @@ public class Layer implements Serializable {
 
     public void setNextWeight(WeightMatrix nextWeight) {
         this.nextWeight = nextWeight;
-    }    
+    }
 
     private double threshold(double sum) {
         //return 1.0 / (1 + Math.exp(-1.0 * sum));
@@ -69,6 +71,7 @@ public class Layer implements Serializable {
             for (int j = 0; j < inputSize; j++) {
                 sum += input[j] * prevWeight.getWeight(j, i);
             }
+            sum += biasWeight[i];
             output[i] = threshold(sum);
         }
     }
@@ -99,6 +102,10 @@ public class Layer implements Serializable {
 
     public double[] getError() {
         return error;
+    }
+
+    public double[] getBiasWeight() {
+        return biasWeight;
     }
 
     public void print() {
