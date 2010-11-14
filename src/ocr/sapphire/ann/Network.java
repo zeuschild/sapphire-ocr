@@ -31,7 +31,10 @@ public class Network implements Serializable {
 
     private int layerNumber;
     private int size[];
-    private double rate = 0.2;
+
+    private double rate = 0.5;
+    private double momentum = 0;
+
     private ArrayList<Layer> layer;
     private ArrayList<WeightMatrix> weight;
 
@@ -73,6 +76,14 @@ public class Network implements Serializable {
         this.rate = rate;
     }
 
+    public double getMomentum() {
+        return momentum;
+    }
+
+    public void setMomentum(double momentum) {
+        this.momentum = momentum;
+    }
+
     private void feedFoward(double input[]) {
         layer.get(0).computeOutput(input);
         for (int i = 1; i < layerNumber; i++) {
@@ -93,12 +104,22 @@ public class Network implements Serializable {
             x = size[k];
             y = size[k+1];
             WeightMatrix temp = weight.get(k);
+            // Update weight
+            // from: neuron i-th of the previous layer
+            // to: neuron j-th of the next layer
             for (int i = 0; i < x; i++) {
                 for(int j = 0; j < y; j++) {
                     double w = temp.getWeight(i, j);
-                    w = w + rate * layer.get(k).getOutput()[i] * layer.get(k + 1).getError()[j];
+                    w = (1 + momentum) * w + rate * layer.get(k).getOutput()[i] * layer.get(k + 1).getError()[j];
                     temp.setWeight(i, j, w);
                 }
+            }
+            // Update bias weight
+            double[] biasWeight = layer.get(k+1).getBiasWeight();
+            for (int j = 0; j < y; j++) {
+                double w = biasWeight[j];
+                w = (1 + momentum) * w + rate * layer.get(k + 1).getError()[j];
+                biasWeight[j] = w;
             }
         }
     }
@@ -132,18 +153,18 @@ public class Network implements Serializable {
 //    }
 
     public static void main(String args[]) {
-        Network network = new Network(3, 5, 3);
-        network.setRate(0.2);
+        Network network = new Network(8, 3, 8);
+        network.setRate(0.3);
         double[][] data = {
-            {0.0, 0.0, 0.0},
-            {1.0, 0.0, 0.0},
-            {0.0, 1.0, 0.0},
-            {0.0, 0.0, 1.0},
-            {1.0, 1.0, 0.0},
-            {0.0, 1.0, 1.0},
-            {1.0, 0.0, 1.0},
-            {1.0, 1.0, 1.0},};
-        for (int k = 0; k < 10000; k++) {
+            {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+            {0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+            {0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+            {0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0},
+            {0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0},
+            {0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0},
+            {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0},
+            {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0}};
+        for (int k = 0; k < 5000; k++) {
             for (int i = 0; i < data.length; i++) {
                 network.train(data[i], data[i]);
             }
