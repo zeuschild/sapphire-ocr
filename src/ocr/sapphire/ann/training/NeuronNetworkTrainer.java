@@ -127,7 +127,7 @@ public class NeuronNetworkTrainer {
                         previousValidateError = validateError;
 
                         // for testing purpose
-                        if (iteration >= 50000) {
+                        if (iteration >= 10000) {
                             return;
                         }
                     }
@@ -175,5 +175,8 @@ public class NeuronNetworkTrainer {
                 "training.yaml", "validate.yaml", "training.csv");
         trainer.run();
         writeNetwork(trainer.getBestNetwork(), "network.yaml");
+        trainer.ann.setCurrentImage("c.png");
+        trainer.ann.prepareInput();
+        System.out.println(trainer.ann.recognize());
     }
 }

@@ -20,11 +20,14 @@
 package ocr.sapphire;
 
 import com.esotericsoftware.yamlbeans.YamlConfig;
+import com.esotericsoftware.yamlbeans.YamlException;
+import com.esotericsoftware.yamlbeans.YamlWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.StringWriter;
 import ocr.sapphire.ann.Layer;
 import ocr.sapphire.ann.Network;
 import ocr.sapphire.ann.OCRNetwork;
@@ -102,4 +105,13 @@ public final class Utils {
         }
         return arr;
     }
+
+    public static String toYaml(Object obj) throws YamlException {
+        StringWriter sw = new StringWriter();
+        YamlWriter yw = new YamlWriter(sw, DEFAULT_YAML_CONFIG);
+        yw.write(obj);
+        yw.close();
+        return sw.toString();
+    }
+
 }
