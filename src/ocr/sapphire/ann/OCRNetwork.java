@@ -24,6 +24,7 @@ package ocr.sapphire.ann;
  *
  * @author Do Bich Ngoc
  */
+import java.util.Arrays;
 import java.io.*;
 import java.awt.image.*;
 import javax.imageio.*;
@@ -44,8 +45,9 @@ public class OCRNetwork implements Serializable {
 
     public OCRNetwork() {
         preprocessor = new ImagePreprocessor(6, 10);
-        network = new Network(60, 40, 40, 40, 16);
-        network.setRate(0.01);
+        network = new Network(60, 76, 16);
+        network.setRate(0.5);
+        network.setMomentum(0.1);
         inputCount = 60;
         outputCount = 16;
         input = new double[inputCount];
@@ -107,6 +109,7 @@ public class OCRNetwork implements Serializable {
 
     public char recognize() {
         network.recognize(input);
+//        System.out.println(Arrays.toString(input));
 //        System.out.println(Arrays.toString(network.getOutput()));
         double[] output = network.getOutput();
         return (char) Utils.toChar(output);
@@ -158,6 +161,7 @@ public class OCRNetwork implements Serializable {
         OCRNetwork net = new OCRNetwork();
 
         for (int i = 0; i < 20; i++) {
+            System.out.println(i);
 
             net.setCurrentImage("b.png");
             net.setResult('B');
@@ -170,28 +174,24 @@ public class OCRNetwork implements Serializable {
             net.prepareInput();
             net.prepareIdeal();
             net.train();
-            System.out.println(net.getError());
 
-//            net.setCurrentImage("c.png");
-//            net.setResult('C');
-//            net.prepa reInput();
-//            net.prepareIdeal();
-//            net.train();
+            net.setCurrentImage("c.png");
+            net.setResult('C');
+            net.prepareInput();
+            net.prepareIdeal();
+            net.train();
         }
 
         net.setCurrentImage("a.png");
         net.prepareInput();
-        net.prepareIdeal();
         System.out.println(net.recognize());
 
         net.setCurrentImage("b.png");
         net.prepareInput();
-        net.prepareIdeal();
         System.out.println(net.recognize());
 
         net.setCurrentImage("c.png");
         net.prepareInput();
-        net.prepareIdeal();
         System.out.println(net.recognize());
 
     }
