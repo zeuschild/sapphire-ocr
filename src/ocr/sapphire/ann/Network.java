@@ -132,15 +132,25 @@ public class Network implements Serializable {
 //    }
 
     public static void main(String args[]) {
-        Network net = new Network(2, 10, 10, 10, 1);
-        net.setRate(0.7);
-        double input[]  = {1, 0};
-        double ideal[] = {1};
-        for (int i = 0; i < 84; i++) {
-            net.feedFoward(input);
-            net.backPropagation(ideal);
-            net.updateWeight();
-            System.out.println(net.getOutput()[0] + " ");
+        Network network = new Network(3, 5, 3);
+        network.setRate(0.2);
+        double[][] data = {
+            {0.0, 0.0, 0.0},
+            {1.0, 0.0, 0.0},
+            {0.0, 1.0, 0.0},
+            {0.0, 0.0, 1.0},
+            {1.0, 1.0, 0.0},
+            {0.0, 1.0, 1.0},
+            {1.0, 0.0, 1.0},
+            {1.0, 1.0, 1.0},};
+        for (int k = 0; k < 10000; k++) {
+            for (int i = 0; i < data.length; i++) {
+                network.train(data[i], data[i]);
+            }
+        }
+        for (int i = 0; i < data.length; i++) {
+            double[] output = network.recognize(data[i]);
+            System.out.println(Arrays.toString(output));
         }
     }
 
