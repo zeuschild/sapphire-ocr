@@ -31,7 +31,7 @@ public class Network implements Serializable {
 
     private int layerNumber;
     private int size[];
-    private double rate = 0.2;
+    private double rate = 0.05;
     private ArrayList<Layer> layer;
     private ArrayList<WeightMatrix> weight;
 

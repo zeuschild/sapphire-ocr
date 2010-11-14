@@ -19,6 +19,8 @@
  */
 package ocr.sapphire.test;
 
+import com.esotericsoftware.yamlbeans.YamlException;
+import ocr.sapphire.Utils;
 import ocr.sapphire.ann.Network;
 import org.apache.commons.lang.ArrayUtils;
 import org.junit.Assert;
@@ -31,7 +33,7 @@ import org.junit.Test;
 public class NetworkTest {
 
     @Test
-    public void identityFunction() {
+    public void identityFunction() throws YamlException {
         Network network = new Network(3, 3, 3);
         double[][] data = {
             {0.0, 0.0, 0.0},
@@ -42,11 +44,58 @@ public class NetworkTest {
             {0.0, 1.0, 1.0},
             {1.0, 0.0, 1.0},
             {1.0, 1.0, 1.0},};
-        for (int k = 0; k < 1000000; k++) {
+        for (int k = 0; k < 100000; k++) {
             for (int i = 0; i < data.length; i++) {
                 network.train(data[i], data[i]);
             }
         }
+
+        System.out.println(Utils.toYaml(network));
+        for (int i = 0; i < data.length; i++) {
+            double[] output = network.recognize(data[i]);
+            System.out.println(ArrayUtils.toString(output));
+            Assert.assertArrayEquals(data[i], output, 0.5);
+        }
+    }
+
+//    @Test
+    public void identityFunction2() throws YamlException {
+        Network network = new Network(8, 3, 8);
+        network.setRate(0.05);
+        double[][] data = {
+            {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, },
+            {0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, },
+            {0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, },
+            {0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, },
+            {0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, },
+            {0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, },
+            {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, },
+            {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, }, };
+        for (int k = 0; k < 100000; k++) {
+            for (int i = 0; i < data.length; i++) {
+                network.train(data[i], data[i]);
+            }
+        }
+
+        System.out.println(Utils.toYaml(network));
+        for (int i = 0; i < data.length; i++) {
+            double[] output = network.recognize(data[i]);
+            System.out.println(ArrayUtils.toString(output));
+            Assert.assertArrayEquals(data[i], output, 0.5);
+        }
+    }
+
+//    @Test
+    public void simplestNetwork() throws YamlException {
+        Network network = new Network(1, 2, 1);
+        double[][] data = {{1.0}, {0.0}};
+        for (int k = 0; k < 200; k++) {
+            for (int i = 0; i < data.length; i++) {
+                network.train(data[i], data[i]);
+            }
+        }
+
+        System.out.println(Utils.toYaml(network));
         for (int i = 0; i < data.length; i++) {
             double[] output = network.recognize(data[i]);
             System.out.println(ArrayUtils.toString(output));
