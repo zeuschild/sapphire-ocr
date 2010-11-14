@@ -31,18 +31,43 @@ import org.junit.Test;
 public class NetworkTest {
 
     @Test
+//    public void identityFunction() {
+//        Network network = new Network(3, 3, 3);
+//        double[][] data = {
+//            {0.0, 0.0, 0.0},
+//            {1.0, 0.0, 0.0},
+//            {0.0, 1.0, 0.0},
+//            {0.0, 0.0, 1.0},
+//            {1.0, 1.0, 0.0},
+//            {0.0, 1.0, 1.0},
+//            {1.0, 0.0, 1.0},
+//            {1.0, 1.0, 1.0},};
+//        for (int k = 0; k < 5000; k++) {
+//            for (int i = 0; i < data.length; i++) {
+//                network.train(data[i], data[i]);
+//            }
+//        }
+//        for (int i = 0; i < data.length; i++) {
+//            double[] output = network.recognize(data[i]);
+//            System.out.println(ArrayUtils.toString(output));
+//            Assert.assertArrayEquals(data[i], output, 0.5);
+//        }
+//    }
+
     public void identityFunction() {
-        Network network = new Network(3, 3, 3);
+        // This is the test in the book.
+        Network network = new Network(8, 3, 8);
+        network.setRate(0.3);
         double[][] data = {
-            {0.0, 0.0, 0.0},
-            {1.0, 0.0, 0.0},
-            {0.0, 1.0, 0.0},
-            {0.0, 0.0, 1.0},
-            {1.0, 1.0, 0.0},
-            {0.0, 1.0, 1.0},
-            {1.0, 0.0, 1.0},
-            {1.0, 1.0, 1.0},};
-        for (int k = 0; k < 1000000; k++) {
+            {1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+            {0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+            {0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+            {0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0},
+            {0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0},
+            {0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0},
+            {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0},
+            {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0}};
+        for (int k = 0; k < 5000; k++) {
             for (int i = 0; i < data.length; i++) {
                 network.train(data[i], data[i]);
             }
