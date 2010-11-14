@@ -1,0 +1,11 @@
+rm tone/*
+cp samples/*-193.sample.png tone/
+cp samples/*-192.sample.png tone/
+cp samples/*-195.sample.png tone/
+cp samples/*-7842.sample.png tone/
+cp samples/*-7840.sample.png tone/
+cp samples/*-225.sample.png tone/
+cp samples/*-224.sample.png tone/
+cp samples/*-7843.sample.png tone/
+cp samples/*-7841.sample.png tone/
+cp samples/*-227.sample.png tone/
