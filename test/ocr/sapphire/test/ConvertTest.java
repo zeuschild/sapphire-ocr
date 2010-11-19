@@ -19,7 +19,7 @@
  */
 package ocr.sapphire.test;
 
-import ocr.sapphire.Utils;
+import ocr.sapphire.util.Utils;
 import org.junit.Assert;
 import org.junit.Test;
 

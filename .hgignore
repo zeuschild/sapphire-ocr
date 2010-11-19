@@ -5,3 +5,23 @@
 \.conflict\~$
 relre:.*-edges\.png
 relre:.*-reverse\d+\.png
+^network (copy)\.yaml$
+^network - full - 15%\.yaml$
+^network - full - 19%\.yaml$
+^network-temp2\.yaml$
+^network-temp\.yaml$
+^result01\.ods$
+^param\.csv$
+^result00\.ods$
+^result - full - 19%\.csv$
+^param\.ods$
+^result2\.csv$
+^result1\.csv$
+^result - full - 15%\.csv$
+^test\.png$
+^result02\.ods$
+^result3\.csv$
+^training-full\.yaml$
+^training-small\.yaml$
+^validate-small\.yaml$
+^validate-full\.yaml$

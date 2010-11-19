@@ -17,12 +17,42 @@
  * along with sapphire-ocr.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-package ocr.sapphire.ann;
+package ocr.sapphire.image;
 
 /**
  *
- * @author Do Bich Ngoc
+ * @author cumeo89
  */
-public class Neuron {
+public class Point {
+
+    public double x, y;
+
+    public Point(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    Point(Point p) {
+        this(p.x, p.y);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("(%.2f, %.2f)", x, y);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Point) {
+            Point p = (Point) obj;
+            return x == p.x && y == p.y;
+        }
+        return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return new Double(x).hashCode() ^ new Double(y).hashCode();
+    }
 
 }

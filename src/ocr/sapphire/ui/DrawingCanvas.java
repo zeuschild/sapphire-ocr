@@ -24,7 +24,7 @@ public class DrawingCanvas extends JPanel {
     private BufferedImage img;
 
     private static Color[] COLOR = {Color.black, Color.white};
-    private static int[] SIZE = {7, 15};
+    private static int[] SIZE = {4, 10};
 
     private int x, y;
     private int index = 0;
@@ -77,7 +77,7 @@ public class DrawingCanvas extends JPanel {
     }
 
     private void resize() {
-        BufferedImage resizedImage = new BufferedImage(WIDTH, HEIGHT,BufferedImage.TYPE_INT_ARGB);
+        BufferedImage resizedImage = new BufferedImage(WIDTH, HEIGHT,BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D g = resizedImage.createGraphics();
         int width = img.getWidth();
         int height = img.getHeight();
@@ -105,7 +105,7 @@ public class DrawingCanvas extends JPanel {
     }
 
     private void initImage() {
-        img = new BufferedImage(WIDTH, HEIGHT,BufferedImage.TYPE_INT_ARGB);
+        img = new BufferedImage(WIDTH, HEIGHT,BufferedImage.TYPE_BYTE_GRAY);
         Graphics g = img.createGraphics();
         g.setColor(Color.white);
         g.fillRect(0, 0, WIDTH, HEIGHT);

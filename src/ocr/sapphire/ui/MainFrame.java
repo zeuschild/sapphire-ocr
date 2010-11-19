@@ -2,13 +2,13 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-
 /**
  *
  * @author Do Bich Ngoc
  */
 package ocr.sapphire.ui;
 
+import com.esotericsoftware.yamlbeans.YamlReader;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.concurrent.ExecutionException;
@@ -17,24 +17,23 @@ import java.util.logging.Logger;
 import javax.swing.*;
 import java.io.*;
 import javax.imageio.*;
-import java.awt.image.*;
+import ocr.sapphire.ann.Layer;
 
-import ocr.sapphire.ann.Network;
-import ocr.sapphire.image.ImagePreprocessor;
+import ocr.sapphire.ann.OCRNetwork;
+import ocr.sapphire.image.RegionBasedImagePreprocessor;
+import ocr.sapphire.util.Utils;
 
 public class MainFrame extends JFrame implements ActionListener {
-    private DrawingCanvas drawingCanvas = new DrawingCanvas();
 
+    private DrawingCanvas drawingCanvas = new DrawingCanvas();
     private JTextField charField = new JTextField(10);
     private JTextField unicodeField = new JTextField(10);
-
-//    private JButton recognizeButton = new JButton("Recognize");
-
     private final JFileChooser chooser = new JFileChooser();
+    private static int CHARACTER_COUNT = 186;
+    private static char[] characterSet = Utils.VIETNAMESE_CHARACTERS.toCharArray();
+    private volatile OCRNetwork network;
 
-    private SwingWorker worker;
-
-    public MainFrame() {
+    public MainFrame() throws IOException {
         setTitle("Handwriting Recognition");
         setPreferredSize(new Dimension(500, 250));
         //setResizable(false);
@@ -43,29 +42,8 @@ public class MainFrame extends JFrame implements ActionListener {
         setLocationRelativeTo(null);
         createMenu();
         createWorkArea();
+        createNetwork();
         setVisible(true);
-
-        worker = new SwingWorker<String, Void>() {
-            @Override
-            protected String doInBackground() throws InterruptedException {
-                //Network network = new Network(26, 30, 8);
-                Thread.sleep(1000);
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    JOptionPane.showMessageDialog(MainFrame.this, get());
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (ExecutionException ex) {
-                    Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        };
-
-        worker.execute();
     }
 
     private void createMenu() {
@@ -79,11 +57,6 @@ public class MainFrame extends JFrame implements ActionListener {
         menuBar.add(help);
 
         // Construct File Menu
-        JMenuItem newItem = new JMenuItem("New");
-        newItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, ActionEvent.CTRL_MASK));
-        newItem.setActionCommand("new");
-        newItem.addActionListener(this);
-        file.add(newItem);
 
         JMenuItem openItem = new JMenuItem("Open...");
         openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, ActionEvent.CTRL_MASK));
@@ -102,7 +75,7 @@ public class MainFrame extends JFrame implements ActionListener {
         exitItem.addActionListener(this);
         file.add(exitItem);
 
-        file.insertSeparator(3);
+        file.insertSeparator(2);
 
         // Construct Edit Menu
         JMenuItem clearAllItem = new JMenuItem("Clear All");
@@ -119,8 +92,8 @@ public class MainFrame extends JFrame implements ActionListener {
         help.add(helpContentsItem);
 
         JMenuItem aboutItem = new JMenuItem("About...");
-        helpContentsItem.setActionCommand("about");
-        helpContentsItem.addActionListener(this);
+        aboutItem.setActionCommand("about");
+        aboutItem.addActionListener(this);
         help.add(aboutItem);
 
         setJMenuBar(menuBar);
@@ -129,7 +102,7 @@ public class MainFrame extends JFrame implements ActionListener {
     private void createWorkArea() {
         JPanel contentPane = new JPanel(new GridBagLayout());
         setContentPane(contentPane);
-        
+
         GridBagConstraints c = new GridBagConstraints();
         c.anchor = GridBagConstraints.FIRST_LINE_START;
         c.insets = new Insets(5, 5, 5, 5);
@@ -146,13 +119,21 @@ public class MainFrame extends JFrame implements ActionListener {
         c.gridheight = 2;
         contentPane.add(drawingCanvas, c);
 
+        drawingCanvas.addMouseListener(new MouseAdapter() {
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                recognize();
+            }
+        });
+
         c.gridx = 1;
         c.gridy = 0;
         c.fill = GridBagConstraints.VERTICAL;
         add(new JSeparator(SwingConstants.VERTICAL), c);
 
         // Action panel
-        JPanel actionPanel  = new JPanel(new GridBagLayout());
+        JPanel actionPanel = new JPanel(new GridBagLayout());
 
         c.gridx = 0;
         c.gridy = 0;
@@ -186,32 +167,45 @@ public class MainFrame extends JFrame implements ActionListener {
         contentPane.add(actionPanel, c);
     }
 
+    private void createNetwork() throws IOException {
+        YamlReader reader = null;
+        try {
+            reader = new YamlReader(new FileReader("network-temp2.yaml"),
+                    Utils.DEFAULT_YAML_CONFIG);
+            network = (OCRNetwork) reader.read();
+            network.getNetwork().initialize();
+            for (Layer layer : network.getNetwork().getLayers()) {
+                layer.initialize();
+            }
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+        }
+    }
+
     public void actionPerformed(ActionEvent e) {
         JMenuItem source = (JMenuItem) e.getSource();
         String s = source.getActionCommand();
-        if (s.compareTo("new") == 0) {
-
-        }
-        else if (s.compareTo("open") == 0) {
+        if (s.compareTo("open") == 0) {
             File file = open();
             if (file != null) {
                 drawingCanvas.drawImage(file);
+                recognize();
             }
-        }
-        else if (s.compareTo("saveAs") == 0) {
+        } else if (s.compareTo("saveAs") == 0) {
             saveAs();
-        }
-        else if (s.compareTo("exit") == 0) {
-
-        }
-        else if (s.compareTo("clearAll") == 0) {
+        } else if (s.compareTo("exit") == 0) {
+            System.exit(0);
+        } else if (s.compareTo("clearAll") == 0) {
             drawingCanvas.clear();
-        }
-        else if (s.compareTo("new") == 0) {
-
-        }
-        else if (s.compareTo("new") == 0) {
-
+            charField.setText("");
+            unicodeField.setText("");
+        } else if (s.compareTo("about") == 0) {
+            JOptionPane.showMessageDialog(null, "Optical Character Recognition\n"
+                    + "1. Le Ngoc Minh\n"
+                    + "2. Do Bich Ngoc");
+        } else if (s.compareTo("help") == 0) {
         }
     }
 
@@ -222,8 +216,7 @@ public class MainFrame extends JFrame implements ActionListener {
             File file = chooser.getSelectedFile();
             System.out.println("Opening: " + file.getName() + ".\n");
             return file;
-        }
-        else {
+        } else {
             return null;
         }
     }
@@ -237,16 +230,78 @@ public class MainFrame extends JFrame implements ActionListener {
             try {
                 ImageIO.write(drawingCanvas.getImage(), "png", file);
             } catch (Exception ex) {
-                
+            }
+        } else {
+        }
+    }
+
+    private void recognize() {
+        SwingWorker worker = new SwingWorker<Character, Void>() {
+
+            @Override
+            protected Character doInBackground() throws InterruptedException {
+                network.setCurrentImage(drawingCanvas.getImage());
+                network.prepareInput();
+                return network.recognize();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    char code = get();
+                    charField.setText(Character.toString(code));
+                    unicodeField.setText(Integer.toHexString(code));
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        };
+
+        worker.execute();
+    }
+
+    private char find(char c) {
+        int low = 0;
+        int high = CHARACTER_COUNT - 1;
+        int mid;
+
+        while (low <= high) {
+            mid = (low + high) / 2;
+            if (c < characterSet[mid]) {
+                high = mid - 1;
+
+            } else if (c > characterSet[mid]) {
+                low = mid + 1;
+
+            } else {
+                return c;
             }
         }
-        else {
+        if (low > CHARACTER_COUNT - 1) {
+            low = CHARACTER_COUNT - 1;
+        }
+        if (high < 0) {
+            high = 0;
+        }
 
+        if ((c - characterSet[high]) < (c - characterSet[low])) {
+            return characterSet[high];
+        } else {
+            return characterSet[low];
         }
     }
 
     public static void main(String arg[]) {
-        MainFrame mainFrame = new MainFrame();
-    }
+        javax.swing.SwingUtilities.invokeLater(new Runnable() {
 
+            public void run() {
+                try {
+                    MainFrame mainFrame = new MainFrame();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                    System.exit(1);
+                }
+            }
+        });
+    }
 }

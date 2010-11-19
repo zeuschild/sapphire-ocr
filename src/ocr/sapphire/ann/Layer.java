@@ -1,24 +1,41 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright Sapphire-group 2010
+ *
+ * This file is part of sapphire-ocr.
+ *
+ * sapphire-ocr is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * sapphire-ocr is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with sapphire-ocr.  If not, see <http://www.gnu.org/licenses/>.
+ *
  */
-
 package ocr.sapphire.ann;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  *
- * @author Do Bich Ngoc
+ * @author cumeo89
  */
-public class Layer implements Serializable {
-    private int size;
-    private transient double output[];
-    private transient double error[];
-    private double biasWeight[];
+public abstract class Layer implements Serializable {
 
-    private transient Layer prevLayer, nextLayer;
-    private transient WeightMatrix prevWeight, nextWeight;
+    protected int size;
+    protected transient double output[];
+    protected transient double error[];
+    protected double biasWeight[];
+    protected transient double deltaBiasWeight[];
+
+    protected transient Layer prevLayer, nextLayer;
+    protected transient WeightMatrix prevWeight, nextWeight;
 
     public Layer() {
         // for yamlbeans to serialize
@@ -26,9 +43,17 @@ public class Layer implements Serializable {
 
     public Layer(int size) {
         this.size = size;
+        biasWeight = new double[size];
+        initialize();
+    }
+
+    public void initialize() {
         output = new double[size];
         error = new double[size];
-        biasWeight = new double[size];
+        deltaBiasWeight = new double[size];
+        for (int i = 0; i < size; i++) {
+            biasWeight[i] = Math.random()*0.1 - 0.05;
+        }
     }
 
     public int getSize() {
@@ -51,15 +76,12 @@ public class Layer implements Serializable {
         this.nextWeight = nextWeight;
     }
 
-    private double threshold(double sum) {
-        //return 1.0 / (1 + Math.exp(-1.0 * sum));
-        return Sigmoid.sigmoid(sum);
-    }
+    protected abstract double threshold(double sum);
 
     public void computeOutput(double input[]) {
-        for (int i = 0; i < size; i++) {
-            output[i] = input[i];
-        }
+        int length = Math.min(input.length, output.length);
+        System.arraycopy(input, 0, output, 0, length);
+        Arrays.fill(output, length, output.length, 0);
     }
 
     public void computeOutput() {
@@ -80,25 +102,9 @@ public class Layer implements Serializable {
         return output;
     }
 
-    public void computeError(double ideal[]) {
-        for (int i = 0; i < size; i++) {
-            double value = output[i];
-            error[i] = value * (1 - value) * (ideal[i] - value);
-        }
-    }
+    public abstract void computeError(double ideal[]);
 
-    public void computeError() {
-        double sum;
-        int outputSize = nextLayer.getSize();
-        double nextError[] = nextLayer.getError();
-        for (int i = 0; i < size; i++) {
-            sum = 0;
-            for (int j = 0; j < outputSize; j++) {
-                sum += nextWeight.getWeight(i, j) * nextError[j];
-            }
-            error[i] = output[i] * (1 - output[i]) * sum;
-        }
-    }
+    public abstract void computeError();
 
     public double[] getError() {
         return error;
@@ -106,6 +112,10 @@ public class Layer implements Serializable {
 
     public double[] getBiasWeight() {
         return biasWeight;
+    }
+
+    public double[] getDeltaBiasWeight() {
+        return deltaBiasWeight;
     }
 
     public void print() {
@@ -120,4 +130,3 @@ public class Layer implements Serializable {
     }
 
 }
-

@@ -27,27 +27,34 @@ import java.io.Serializable;
  * @author Do Bich Ngoc
  */
 public class WeightMatrix implements Serializable {
-    private int previousLayerSize;
-    private int nextLayerSize;
+
     private double weight[][];
+    private transient double delta[][];
 
     public WeightMatrix() {
         // for yamlbeans to serialize
     }
 
     public WeightMatrix(int previousLayerSize, int nextLayerSize) {
-        this.previousLayerSize = previousLayerSize;
-        this.nextLayerSize = nextLayerSize;
         weight = new double[previousLayerSize][nextLayerSize];
+        delta = new double[previousLayerSize][nextLayerSize];
         initialize();
     }
 
     private void initialize() {
-        for (int i = 0; i < previousLayerSize; i++) {
-            for (int j = 0; j < nextLayerSize; j++) {
+        for (int i = 0; i < previousLayerSize(); i++) {
+            for (int j = 0; j < nextLayerSize(); j++) {
                 weight[i][j] = Math.random() * 0.1 - 0.05;
             }
         }
+    }
+
+    private int previousLayerSize() {
+        return weight.length;
+    }
+
+    private int nextLayerSize() {
+        return weight[0].length;
     }
 
     public void setWeight(int i, int j, double w) {
@@ -58,9 +65,17 @@ public class WeightMatrix implements Serializable {
         return weight[i][j];
     }
 
+    public void setDelta(int i, int j, double d) {
+        delta[i][j] = d;
+    }
+
+    public double getDelta(int i, int j) {
+        return delta[i][j];
+    }
+
     public void print() {
-        for (int i = 0; i < previousLayerSize; i++) {
-            for (int j = 0; j < nextLayerSize; j++) {
+        for (int i = 0; i < previousLayerSize(); i++) {
+            for (int j = 0; j < nextLayerSize(); j++) {
                 System.out.print(weight[i][j] + " ");
             }
             System.out.println();

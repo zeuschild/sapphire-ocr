@@ -17,7 +17,7 @@
  * along with sapphire-ocr.  If not, see <http://www.gnu.org/licenses/>.
  * 
  */
-package ocr.sapphire;
+package ocr.sapphire.util;
 
 import com.esotericsoftware.yamlbeans.YamlConfig;
 import com.esotericsoftware.yamlbeans.YamlException;
@@ -28,11 +28,13 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.StringWriter;
-import ocr.sapphire.ann.Layer;
+import ocr.sapphire.ann.SigmoidLayer;
 import ocr.sapphire.ann.Network;
 import ocr.sapphire.ann.OCRNetwork;
 import ocr.sapphire.ann.WeightMatrix;
+import ocr.sapphire.image.Point;
 import ocr.sapphire.image.PreprocessorConfig;
+import ocr.sapphire.image.Rectangle;
 import ocr.sapphire.sample.CharacterProcessedSample;
 
 /**
@@ -41,6 +43,12 @@ import ocr.sapphire.sample.CharacterProcessedSample;
  */
 public final class Utils {
 
+    public static final String VIETNAMESE_CHARACTERS =
+            "aAàÀảẢãÃáÁạẠăĂằẰẳẲẵẴắẮặẶâÂầẦẩẨẫẪấẤậẬbBcCdDđĐeEèÈẻẺẽẼéÉẹẸêÊềỀểỂễỄếẾệỆ"
+            + "fFgGhHiIìÌỉỈĩĨíÍịỊjJkKlLmMnNoOòÒỏỎõÕóÓọỌôÔồỒổỔỗỖốỐộỘơƠờỜởỞỡỠớỚợỢpPqQrRsStTu"
+            + "UùÙủỦũŨúÚụỤưƯừỪửỬữỮứỨựỰvVwWxXyYỳỲỷỶỹỸýÝỵỴzZ";
+    public static final String NO_CASE_CHARACTERS =
+            "cCjJoOòÒỏỎõÕóÓọỌôÔồỒổỔỗỖốỐộỘơƠờỜởỞỡỠớỚợỢpuUùÙủỦũŨúÚụỤưƯừỪửỬữỮứỨựỰvVxXzZ";
     public static final YamlConfig DEFAULT_YAML_CONFIG = new YamlConfig();
 
     static {
@@ -54,7 +62,7 @@ public final class Utils {
         DEFAULT_YAML_CONFIG.setClassTag("network",
                 Network.class);
         DEFAULT_YAML_CONFIG.setClassTag("layer",
-                Layer.class);
+                SigmoidLayer.class);
         DEFAULT_YAML_CONFIG.setClassTag("weight",
                 WeightMatrix.class);
     }
@@ -86,32 +94,46 @@ public final class Utils {
         return (T) obj;
     }
 
-    public static char toChar(double[] arr) {
-        int v = 0;
-        for (int i = 0; i < 16; i++) {
-            if (arr[i] >= 0.5) {
-                v += (1 << i);
-            }
-        }
-        return (char) v;
-    }
-
-    public static double[] toDoubleArray(char ch) {
-        double[] arr = new double[16];
-        for (int i = 0; i < 16; i++) {
-            if ((ch & (1 << i)) != 0) {
-                arr[i] = 1.0;
-            }
-        }
-        return arr;
-    }
-
     public static String toYaml(Object obj) throws YamlException {
         StringWriter sw = new StringWriter();
         YamlWriter yw = new YamlWriter(sw, DEFAULT_YAML_CONFIG);
         yw.write(obj);
         yw.close();
         return sw.toString();
+    }
+
+    public static Rectangle getBounds(Iterable<Point> points) {
+        double x1 = Double.MAX_VALUE, y1 = Double.MAX_VALUE;
+        double x2 = Double.MIN_VALUE, y2 = Double.MIN_VALUE;
+        for (Point p : points) {
+            if (p.x < x1) {
+                x1 = p.x;
+            }
+            if (p.y < y1) {
+                y1 = p.y;
+            }
+            if (p.x > x2) {
+                x2 = p.x;
+            }
+            if (p.y > y2) {
+                y2 = p.y;
+            }
+        }
+        return new Rectangle(x1, y1, x2 - x1, y2 - y1);
+    }
+
+    private static final CharacterConverter CONVERTER = new UnicodeConverter();
+
+    public static char toChar(double[] arr) {
+        return CONVERTER.toChar(arr);
+    }
+
+    public static double[] toDoubleArray(char ch) {
+        return CONVERTER.toDoubleArray(ch);
+    }
+
+    public static int getOutputCount() {
+        return CONVERTER.getOutputCount();
     }
 
 }

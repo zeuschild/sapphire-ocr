@@ -8,7 +8,9 @@ import ocr.sapphire.image.PreprocessorConfig;
 import com.esotericsoftware.yamlbeans.YamlException;
 import com.esotericsoftware.yamlbeans.YamlReader;
 import java.io.FileReader;
-import ocr.sapphire.Utils;
+import java.util.LinkedList;
+import java.util.List;
+import ocr.sapphire.util.Utils;
 
 public class ProcessedSampleReader implements Closeable {
 
@@ -23,6 +25,15 @@ public class ProcessedSampleReader implements Closeable {
 
     public ProcessedSample read() throws YamlException {
         return yamlReader.read(CharacterProcessedSample.class);
+    }
+
+    public List<ProcessedSample> readAll() throws YamlException {
+        List<ProcessedSample> samples = new LinkedList<ProcessedSample>();
+        ProcessedSample sample = null;
+        while ((sample = read()) != null) {
+            samples.add(sample);
+        }
+        return samples;
     }
 
     public PreprocessorConfig getConfig() {

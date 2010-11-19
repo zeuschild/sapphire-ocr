@@ -17,12 +17,31 @@
  * along with sapphire-ocr.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-package ocr.sapphire.ann;
+package ocr.sapphire.image;
 
 /**
  *
- * @author Do Bich Ngoc
+ * @author cumeo89
  */
-public class Neuron {
+public class Rectangle {
+
+    public double x, y, width, height;
+
+    public Rectangle(double x, double y, double width, double height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    public boolean contains(Rectangle r) {
+        return r.x >= x && r.y >= y
+                && (r.x + r.width <= x + width) && (r.y + r.height <= y + height);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("((%.2f, %.2f) (%.2f, %.2f))", x, y, width, height);
+    }
 
 }
