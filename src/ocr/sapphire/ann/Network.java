@@ -17,7 +17,6 @@
  * along with sapphire-ocr.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 package ocr.sapphire.ann;
 
 import java.io.Serializable;
@@ -29,13 +28,12 @@ import java.util.*;
  */
 public class Network implements Serializable {
 
-    private int layerNumber;
+    private int layerCount;
     private int size[];
-
+    private boolean useLinearOutputLayer = false;
     private double rate = 0.5;
-    private double momentum = 0;
-
-    private ArrayList<Layer> layer;
+    private double momentum = 0.1;
+    private ArrayList<Layer> layers;
     private ArrayList<WeightMatrix> weight;
 
     public Network() {
@@ -43,29 +41,33 @@ public class Network implements Serializable {
     }
 
     public Network(int... size) {
-        layerNumber = size.length;
+        layerCount = size.length;
         this.size = size;
-        layer = new ArrayList<Layer>(layerNumber);
-        weight = new ArrayList<WeightMatrix>(layerNumber - 1);
+        layers = new ArrayList<Layer>(layerCount);
+        weight = new ArrayList<WeightMatrix>(layerCount - 1);
         initialize();
     }
 
-    private void initialize() {
-        layer.add(new Layer(size[0]));
-        for (int i = 1; i < layerNumber; i++) {
-            layer.add(new Layer(size[i]));
-            weight.add(new WeightMatrix(size[i-1], size[i]));
+    public void initialize() {
+        layers.add(new SigmoidLayer(size[0]));
+        for (int i = 1; i < layerCount; i++) {
+            if (useLinearOutputLayer && i == layerCount - 1) {
+                layers.add(new LinearLayer(size[i]));
+            } else {
+                layers.add(new SigmoidLayer(size[i]));
+            }
+            weight.add(new WeightMatrix(size[i - 1], size[i]));
         }
-        layer.get(0).setNextLayer(layer.get(1));
-        layer.get(0).setNextWeight(weight.get(0));
-        for (int i = 1; i < layerNumber - 1; i++) {
-            layer.get(i).setPrevLayer(layer.get(i - 1));
-            layer.get(i).setNextLayer(layer.get(i + 1));
-            layer.get(i).setPrevWeight(weight.get(i - 1));
-            layer.get(i).setNextWeight(weight.get(i));
+        layers.get(0).setNextLayer(layers.get(1));
+        layers.get(0).setNextWeight(weight.get(0));
+        for (int i = 1; i < layerCount - 1; i++) {
+            layers.get(i).setPrevLayer(layers.get(i - 1));
+            layers.get(i).setNextLayer(layers.get(i + 1));
+            layers.get(i).setPrevWeight(weight.get(i - 1));
+            layers.get(i).setNextWeight(weight.get(i));
         }
-        layer.get(layerNumber - 1).setPrevLayer(layer.get(layerNumber - 2));
-        layer.get(layerNumber - 1).setPrevWeight(weight.get(layerNumber - 2));
+        layers.get(layerCount - 1).setPrevLayer(layers.get(layerCount - 2));
+        layers.get(layerCount - 1).setPrevWeight(weight.get(layerCount - 2));
     }
 
     public double getRate() {
@@ -85,41 +87,44 @@ public class Network implements Serializable {
     }
 
     private void feedFoward(double input[]) {
-        layer.get(0).computeOutput(input);
-        for (int i = 1; i < layerNumber; i++) {
-            layer.get(i).computeOutput();
+        layers.get(0).computeOutput(input);
+        for (int i = 1; i < layerCount; i++) {
+            layers.get(i).computeOutput();
         }
     }
 
     private void backPropagation(double ideal[]) {
-        layer.get(layerNumber - 1).computeError(ideal);
-        for (int i = layerNumber - 2; i >= 0; i--) {
-            layer.get(i).computeError();
+        layers.get(layerCount - 1).computeError(ideal);
+        for (int i = layerCount - 2; i >= 0; i--) {
+            layers.get(i).computeError();
         }
     }
 
     private void updateWeight() {
         int x, y;
-        for (int k = 0; k < layerNumber - 1; k++) {
+        for (int k = 0; k < layerCount - 1; k++) {
             x = size[k];
-            y = size[k+1];
+            y = size[k + 1];
             WeightMatrix temp = weight.get(k);
             // Update weight
             // from: neuron i-th of the previous layer
             // to: neuron j-th of the next layer
             for (int i = 0; i < x; i++) {
-                for(int j = 0; j < y; j++) {
+                for (int j = 0; j < y; j++) {
                     double w = temp.getWeight(i, j);
-                    w = (1 + momentum) * w + rate * layer.get(k).getOutput()[i] * layer.get(k + 1).getError()[j];
+                    double d = temp.getDelta(i, j);
+                    d = momentum * d + rate * layers.get(k).getOutput()[i] * layers.get(k + 1).getError()[j];
+                    w = w + d;
                     temp.setWeight(i, j, w);
+                    temp.setDelta(i, j, d);
                 }
             }
             // Update bias weight
-            double[] biasWeight = layer.get(k+1).getBiasWeight();
+            double[] biasWeight = layers.get(k + 1).getBiasWeight();
+            double[] deltaBiasWeight = layers.get(k + 1).getDeltaBiasWeight();
             for (int j = 0; j < y; j++) {
-                double w = biasWeight[j];
-                w = (1 + momentum) * w + rate * layer.get(k + 1).getError()[j];
-                biasWeight[j] = w;
+                deltaBiasWeight[j] = momentum * deltaBiasWeight[j] + rate * layers.get(k + 1).getError()[j];
+                biasWeight[j] += deltaBiasWeight[j];
             }
         }
     }
@@ -130,13 +135,21 @@ public class Network implements Serializable {
         updateWeight();
     }
 
-    public double[] recognize(double[] input)  {
+    public double[] recognize(double[] input) {
         feedFoward(input);
-        return layer.get(layerNumber - 1).getOutput();
+        return layers.get(layerCount - 1).getOutput();
     }
 
     public double[] getOutput() {
-        return layer.get(layerNumber - 1).getOutput();
+        return layers.get(layerCount - 1).getOutput();
+    }
+
+    public int getInputCount() {
+        return layers.get(0).getSize();
+    }
+
+    public int getOutputCount() {
+        return layers.get(layerCount - 1).getSize();
     }
 
 //    public void print() {
@@ -151,7 +164,6 @@ public class Network implements Serializable {
 //        }
 //        System.out.println();
 //    }
-
     public static void main(String args[]) {
         Network network = new Network(8, 3, 8);
         network.setRate(0.3);
@@ -173,6 +185,14 @@ public class Network implements Serializable {
             double[] output = network.recognize(data[i]);
             System.out.println(Arrays.toString(output));
         }
+    }
+
+    public int getLayerCount() {
+        return layerCount;
+    }
+
+    public ArrayList<Layer> getLayers() {
+        return layers;
     }
 
 }

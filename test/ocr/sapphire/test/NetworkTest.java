@@ -20,7 +20,8 @@
 package ocr.sapphire.test;
 
 import com.esotericsoftware.yamlbeans.YamlException;
-import ocr.sapphire.Utils;
+import java.util.Arrays;
+import ocr.sapphire.util.Utils;
 import ocr.sapphire.ann.Network;
 import org.apache.commons.lang.ArrayUtils;
 import org.junit.Assert;
@@ -32,7 +33,7 @@ import org.junit.Test;
  */
 public class NetworkTest {
 
-//    @Test
+    @Test
     public void identityFunction() {
         Network network = new Network(3, 3, 3);
         double[][] data = {
@@ -85,13 +86,16 @@ public class NetworkTest {
         }
     }
 
-//    @Test
+    @Test
     public void simplestNetwork() throws YamlException {
-        Network network = new Network(1, 2, 1);
-        double[][] data = {{1.0}, {0.0}};
-        for (int k = 0; k < 200; k++) {
+        Network network = new Network(1, 1, 1);
+        double[][] data = {{1.0}};
+        for (int k = 0; k < 20; k++) {
             for (int i = 0; i < data.length; i++) {
+                System.out.println("************* (" + k + ", " + i + ") ***********");
+                System.out.println(Utils.toYaml(network));
                 network.train(data[i], data[i]);
+                System.out.println("output: " + Arrays.toString(network.getOutput()));
             }
         }
 

@@ -4,6 +4,7 @@
  */
 package ocr.sapphire.test;
 
+import java.io.IOException;
 import ocr.sapphire.ann.OCRNetwork;
 import org.junit.Test;
 
@@ -17,7 +18,7 @@ public class PerformanceTest {
     }
 
     @Test
-    public void train() {
+    public void train() throws IOException {
         OCRNetwork net = new OCRNetwork();
         net.setCurrentImage("a.png");
         net.setResult('A');

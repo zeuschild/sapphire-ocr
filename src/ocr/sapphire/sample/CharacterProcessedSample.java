@@ -1,6 +1,6 @@
 package ocr.sapphire.sample;
 
-import ocr.sapphire.Utils;
+import ocr.sapphire.util.Utils;
 
 public class CharacterProcessedSample implements ProcessedSample {
 

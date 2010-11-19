@@ -17,63 +17,57 @@
  * along with sapphire-ocr.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 package ocr.sapphire.ann;
 
 /**
  *
  * @author Do Bich Ngoc
  */
-import java.util.Arrays;
 import java.io.*;
 import java.awt.image.*;
 import javax.imageio.*;
-import ocr.sapphire.Utils;
+import ocr.sapphire.util.Utils;
+import ocr.sapphire.image.EdgeBasedImagePreprocessor;
 import ocr.sapphire.image.ImagePreprocessor;
+import ocr.sapphire.image.PreprocessorConfig;
+import ocr.sapphire.image.RegionBasedImagePreprocessor;
 import ocr.sapphire.sample.ProcessedSample;
 
 public class OCRNetwork implements Serializable {
+
     private Network network;
     private transient ImagePreprocessor preprocessor;
     private transient BufferedImage currentImage;
-
     private transient double input[];
     private transient double ideal[];
-    private transient int inputCount, outputCount;
-
     private transient char result;
 
     public OCRNetwork() {
-        preprocessor = new ImagePreprocessor(6, 10);
-        network = new Network(60, 76, 16);
-        network.setRate(0.5);
-        network.setMomentum(0.1);
-        inputCount = 60;
-        outputCount = 16;
-        input = new double[inputCount];
-        ideal = new double[16];
+        this(new PreprocessorConfig(3, 10));
     }
 
-    public OCRNetwork(Network network, ImagePreprocessor preprocessor) {
-        this.network = network;
+    public OCRNetwork(PreprocessorConfig config, int... hiddenLayers) {
+        this(new RegionBasedImagePreprocessor(config), hiddenLayers);
+
+    }
+
+    public OCRNetwork(ImagePreprocessor preprocessor, int... hiddenLayers) {
         this.preprocessor = preprocessor;
-        inputCount = preprocessor.getComponentCount() * preprocessor.getSeriesLength();
-        outputCount = 16;
-        input = new double[inputCount];
-        ideal = new double[16];
+        int[] layerSizes = new int[hiddenLayers.length+2];
+        layerSizes[0] = preprocessor.getMaxInputCount();
+        System.arraycopy(hiddenLayers, 0, layerSizes, 1, hiddenLayers.length);
+        layerSizes[layerSizes.length-1] = Utils.getOutputCount();
+        this.network = new Network(layerSizes);
+        input = new double[layerSizes[0]];
+        ideal = new double[layerSizes[layerSizes.length-1]];
     }
 
     public void setCurrentImage(BufferedImage currentImage) {
         this.currentImage = currentImage;
     }
 
-    public void setCurrentImage(String url) {
-        try {
-            currentImage = ImageIO.read(new File(url));
-        }
-        catch (IOException ex) {
-
-        }
+    public void setCurrentImage(String url) throws IOException {
+        currentImage = ImageIO.read(new File(url));
     }
 
     public void setResult(char result) {
@@ -81,26 +75,8 @@ public class OCRNetwork implements Serializable {
     }
 
     public void prepareInput() {
-        double[][][] coefficients = preprocessor.process(currentImage);
-        int componentCount = preprocessor.getComponentCount();
-        int coefficientCount = preprocessor.getSeriesLength();
-        double real, image, a, b;
-        int k = 0;
-
-        // Component i-th
-        for(int i = 0; i < componentCount; i++) {
-            // a[j], b[j]
-            for(int j = 0; j < coefficientCount; j++) {
-                real = coefficients[i][0][j];
-                image = coefficients[i][1][j];
-                a = Math.sqrt(real * real + image * image);
-                real = coefficients[i][2][j];
-                image = coefficients[i][3][j];
-                b = Math.sqrt(real * real + image * image);
-                input[k] = Math.sqrt(a * a + b * b);
-                k++;
-            }
-        }
+        preprocessor.process(currentImage);
+        input = preprocessor.getInputs();
     }
 
     public void prepareIdeal() {
@@ -149,38 +125,52 @@ public class OCRNetwork implements Serializable {
     public double getError() {
         double error = 0, delta = 0;
         double[] output = network.getOutput();
-        for (int i = 0; i < outputCount; i++) {
+        for (int i = 0; i < network.getOutputCount(); i++) {
             delta = ideal[i] - output[i];
             error += delta * delta;
         }
         error *= 0.5;
-       return error;
+        return error;
     }
 
-    public static void main(String args[]) {
-        OCRNetwork net = new OCRNetwork();
+    public Network getNetwork() {
+        return network;
+    }
 
-        for (int i = 0; i < 20; i++) {
+    public static void main(String args[]) throws IOException {
+        OCRNetwork net = new OCRNetwork();
+        BufferedImage a = ImageIO.read(new File("a.png"));
+        net.preprocessor.process(a);
+        double ai[] = net.preprocessor.getInputs();
+        double ao[] = Utils.toDoubleArray('A');
+
+        BufferedImage b = ImageIO.read(new File("b.png"));
+        net.preprocessor.process(b);
+        double bi[] = net.preprocessor.getInputs();
+        double bo[] = Utils.toDoubleArray('B');
+
+        BufferedImage c = ImageIO.read(new File("c.png"));
+        net.preprocessor.process(c);
+        double ci[] = net.preprocessor.getInputs();
+        double co[] = Utils.toDoubleArray('C');
+
+        for (int i = 0; i < 2000; i++) {
             System.out.println(i);
 
-            net.setCurrentImage("b.png");
-            net.setResult('B');
-            net.prepareInput();
-            net.prepareIdeal();
+            net.input = bi;
+            net.ideal = bo;
             net.train();
 
-            net.setCurrentImage("a.png");
-            net.setResult('A');
-            net.prepareInput();
-            net.prepareIdeal();
+            net.input = ai;
+            net.ideal = ao;
             net.train();
 
-            net.setCurrentImage("c.png");
-            net.setResult('C');
-            net.prepareInput();
-            net.prepareIdeal();
+            net.input = ci;
+            net.ideal = co;
             net.train();
         }
+
+//        System.out.println(Utils.toYaml(net));
 
         net.setCurrentImage("a.png");
         net.prepareInput();
@@ -193,7 +183,5 @@ public class OCRNetwork implements Serializable {
         net.setCurrentImage("c.png");
         net.prepareInput();
         System.out.println(net.recognize());
-
     }
-
 }

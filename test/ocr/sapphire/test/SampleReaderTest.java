@@ -5,10 +5,8 @@
 package ocr.sapphire.test;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import ocr.sapphire.image.PreprocessorConfig;
 import ocr.sapphire.sample.ProcessedSampleReader;
 import org.junit.Test;
 

@@ -25,6 +25,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 import ocr.sapphire.image.ImagePreprocessor;
+import ocr.sapphire.image.RegionBasedImagePreprocessor;
 import org.junit.Test;
 
 /**
@@ -33,9 +34,9 @@ import org.junit.Test;
  */
 public class FourierTransformTest {
 
-//    @Test
+    @Test
     public void reverseAll() throws IOException {
-        File inputDir = new File("/home/cumeo89/HUT/hk7/tri tue nhan tao/btl/data/samples");
+        File inputDir = new File("../data/samples");
         File[] files = inputDir.listFiles(new FilenameFilter() {
 
             public boolean accept(File dir, String name) {
@@ -43,23 +44,24 @@ public class FourierTransformTest {
             }
         });
 
-        ImagePreprocessor preprocessor = new ImagePreprocessor(6, 10);
-        for (int i = 0; i < files.length && i < 100; i++) {
+        ImagePreprocessor preprocessor = new RegionBasedImagePreprocessor(4, 10);
+        for (int i = 0; i < files.length; i++) {
+            System.out.println(i);
             BufferedImage image = ImageIO.read(files[i]);
             preprocessor.process(image);
             BufferedImage reverseImage = preprocessor.reverseToSingleImage();
-            File output = new File("/home/cumeo89/HUT/hk7/tri tue nhan tao/btl/data/reverse/" + files[i].getName());
+            File output = new File("../data/reverse/" + files[i].getName());
             ImageIO.write(reverseImage, "PNG", output);
-            File edgeFile =  new File("/home/cumeo89/HUT/hk7/tri tue nhan tao/btl/data/edge/" + files[i].getName());
-            ImageIO.write(preprocessor.getEdgeImage(), "PNG", edgeFile);
+            File edgeFile =  new File("../data/edge/" + files[i].getName());
+            ImageIO.write(preprocessor.getContourImage(), "PNG", edgeFile);
         }
     }
 
     private void singleTransform(String character) throws IOException {
-        ImagePreprocessor preprocessor = new ImagePreprocessor(6, 50);
+        ImagePreprocessor preprocessor = new RegionBasedImagePreprocessor(4, 10);
         BufferedImage image = ImageIO.read(new File(character + ".png"));
         preprocessor.process(image);
-        ImageIO.write(preprocessor.getEdgeImage(), "PNG", new File(character + "-edges.png"));
+        ImageIO.write(preprocessor.getContourImage(), "PNG", new File(character + "-edges.png"));
         int i = 0;
         for (BufferedImage reverseImage : preprocessor.reverse()) {
             ImageIO.write(reverseImage, "PNG", new File(character + "-reverse" + (++i) + ".png"));
@@ -67,11 +69,11 @@ public class FourierTransformTest {
         ImageIO.write(preprocessor.reverseToSingleImage(), "PNG", new File(character + "-reverse.png"));
     }
 
-    @Test
+//    @Test
     public void singleTransform() throws IOException {
         singleTransform("a");
-        singleTransform("b");
-        singleTransform("c");
+//        singleTransform("b");
+//        singleTransform("c");
     }
 
 }

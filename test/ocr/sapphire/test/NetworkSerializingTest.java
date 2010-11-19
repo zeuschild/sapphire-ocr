@@ -23,8 +23,8 @@ import com.esotericsoftware.yamlbeans.YamlException;
 import com.esotericsoftware.yamlbeans.YamlWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import ocr.sapphire.Utils;
-import ocr.sapphire.ann.Layer;
+import ocr.sapphire.util.Utils;
+import ocr.sapphire.ann.SigmoidLayer;
 import org.junit.Test;
 
 /**
@@ -35,7 +35,7 @@ public class NetworkSerializingTest {
 
     @Test
     public void serializeLayer() throws YamlException {
-        Layer layer = new Layer(3);
+        SigmoidLayer layer = new SigmoidLayer(3);
         StringWriter sw = new StringWriter();
         YamlWriter yamlWriter = new YamlWriter(sw, Utils.DEFAULT_YAML_CONFIG);
         yamlWriter.write(layer);
@@ -45,10 +45,10 @@ public class NetworkSerializingTest {
 
     @Test
     public void serializeLayerList() throws YamlException {
-        ArrayList<Layer> layers = new ArrayList<Layer>();
-        layers.add(new Layer(3));
-        layers.add(new Layer(2));
-        layers.add(new Layer(4));
+        ArrayList<SigmoidLayer> layers = new ArrayList<SigmoidLayer>();
+        layers.add(new SigmoidLayer(3));
+        layers.add(new SigmoidLayer(2));
+        layers.add(new SigmoidLayer(4));
         StringWriter sw = new StringWriter();
         YamlWriter yamlWriter = new YamlWriter(sw, Utils.DEFAULT_YAML_CONFIG);
         yamlWriter.write(layers);
