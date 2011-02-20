@@ -41,7 +41,7 @@ import static com.tomgibara.CannyEdgeDetector.BLACK;
 import static com.tomgibara.CannyEdgeDetector.WHITE;
 import static ocr.sapphire.util.Utils.getBounds;
 
-public class EdgeBasedImagePreprocessor extends ImagePreprocessor {
+public class EdgeBasedImagePreprocessor extends AbstractImagePreprocessor {
 
     public EdgeBasedImagePreprocessor() {
         this(4, 10);

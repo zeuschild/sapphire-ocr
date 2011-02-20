@@ -23,19 +23,23 @@ package ocr.sapphire.ann;
  *
  * @author Do Bich Ngoc
  */
-import java.io.*;
-import java.awt.image.*;
-import javax.imageio.*;
-import ocr.sapphire.util.Utils;
-import ocr.sapphire.image.ImagePreprocessor;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+
+import javax.imageio.ImageIO;
+
+import ocr.sapphire.image.AbstractImagePreprocessor;
 import ocr.sapphire.image.PreprocessorConfig;
 import ocr.sapphire.image.RegionBasedImagePreprocessor;
 import ocr.sapphire.sample.ProcessedSample;
+import ocr.sapphire.util.Utils;
 
 public class OCRNetwork implements Serializable {
 
     private Network network;
-    private transient ImagePreprocessor preprocessor;
+    private transient AbstractImagePreprocessor preprocessor;
     private transient BufferedImage currentImage;
     private transient double input[];
     private transient double ideal[];
@@ -50,7 +54,7 @@ public class OCRNetwork implements Serializable {
 
     }
 
-    public OCRNetwork(ImagePreprocessor preprocessor, int... hiddenLayers) {
+    public OCRNetwork(AbstractImagePreprocessor preprocessor, int... hiddenLayers) {
         this.preprocessor = preprocessor;
         int[] layerSizes = new int[hiddenLayers.length+2];
         layerSizes[0] = preprocessor.getMaxInputCount();

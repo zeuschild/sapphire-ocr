@@ -24,7 +24,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import javax.imageio.ImageIO;
-import ocr.sapphire.image.ImagePreprocessor;
+import ocr.sapphire.image.AbstractImagePreprocessor;
 import ocr.sapphire.image.RegionBasedImagePreprocessor;
 import org.junit.Test;
 
@@ -44,7 +44,7 @@ public class FourierTransformTest {
             }
         });
 
-        ImagePreprocessor preprocessor = new RegionBasedImagePreprocessor(4, 10);
+        AbstractImagePreprocessor preprocessor = new RegionBasedImagePreprocessor(4, 10);
         for (int i = 0; i < files.length; i++) {
             System.out.println(i);
             BufferedImage image = ImageIO.read(files[i]);
@@ -58,7 +58,7 @@ public class FourierTransformTest {
     }
 
     private void singleTransform(String character) throws IOException {
-        ImagePreprocessor preprocessor = new RegionBasedImagePreprocessor(4, 10);
+        AbstractImagePreprocessor preprocessor = new RegionBasedImagePreprocessor(4, 10);
         BufferedImage image = ImageIO.read(new File(character + ".png"));
         preprocessor.process(image);
         ImageIO.write(preprocessor.getContourImage(), "PNG", new File(character + "-edges.png"));
