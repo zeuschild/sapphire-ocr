@@ -141,7 +141,7 @@ public class RegionBasedImagePreprocessor extends ImagePreprocessor {
             }
         } while (connected);
 
-        // remove contained components
+        // remove inner components
         for (int i = 0; i < components.size() - 1; i++) {
             Rectangle r1 = getBounds(components.get(i));
             for (int j = i + 1; j < components.size();) {

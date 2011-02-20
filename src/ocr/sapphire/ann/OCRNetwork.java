@@ -27,7 +27,6 @@ import java.io.*;
 import java.awt.image.*;
 import javax.imageio.*;
 import ocr.sapphire.util.Utils;
-import ocr.sapphire.image.EdgeBasedImagePreprocessor;
 import ocr.sapphire.image.ImagePreprocessor;
 import ocr.sapphire.image.PreprocessorConfig;
 import ocr.sapphire.image.RegionBasedImagePreprocessor;
