@@ -25,3 +25,8 @@ relre:.*-reverse\d+\.png
 ^training-small\.yaml$
 ^validate-small\.yaml$
 ^validate-full\.yaml$
+
+syntax: regexp
+^\.classpath$
+syntax: regexp
+^\.project$

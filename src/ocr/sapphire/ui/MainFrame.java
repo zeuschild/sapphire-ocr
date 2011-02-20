@@ -11,16 +11,12 @@ package ocr.sapphire.ui;
 import com.esotericsoftware.yamlbeans.YamlReader;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.concurrent.ExecutionException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.*;
 import java.io.*;
 import javax.imageio.*;
 import ocr.sapphire.ann.Layer;
 
 import ocr.sapphire.ann.OCRNetwork;
-import ocr.sapphire.image.RegionBasedImagePreprocessor;
 import ocr.sapphire.util.Utils;
 
 public class MainFrame extends JFrame implements ActionListener {
