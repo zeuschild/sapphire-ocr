@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import ocr.sapphire.image.ImagePreprocessor;
+import ocr.sapphire.image.AbstractImagePreprocessor;
 
 import ocr.sapphire.image.PreprocessorConfig;
 import ocr.sapphire.image.RegionBasedImagePreprocessor;
@@ -27,7 +27,7 @@ public class SamplePreparer {
         try {
             trainingWriter = new ProcessedSampleWriter(TRAINING_PATH, DEFAULT_CONFIG);
             validateWriter = new ProcessedSampleWriter(VALIDATE_PATH, DEFAULT_CONFIG);
-            ImagePreprocessor processor = new RegionBasedImagePreprocessor(DEFAULT_CONFIG);
+            AbstractImagePreprocessor processor = new RegionBasedImagePreprocessor(DEFAULT_CONFIG);
 
             File sampleDir = new File(SAMPLE_DIR);
             FileFilter filter = new SampleFileFilter();

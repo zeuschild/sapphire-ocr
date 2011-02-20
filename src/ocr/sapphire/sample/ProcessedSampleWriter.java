@@ -8,6 +8,7 @@ import ocr.sapphire.image.PreprocessorConfig;
 
 import com.esotericsoftware.yamlbeans.YamlException;
 import com.esotericsoftware.yamlbeans.YamlWriter;
+import ocr.sapphire.image.AbstractImagePreprocessor;
 import ocr.sapphire.image.ImagePreprocessor;
 import ocr.sapphire.image.RegionBasedImagePreprocessor;
 import ocr.sapphire.util.Utils;
@@ -16,7 +17,7 @@ public class ProcessedSampleWriter implements Closeable {
 
     PreprocessorConfig config;
     private YamlWriter yamlWriter;
-    private ImagePreprocessor processor;
+    private AbstractImagePreprocessor processor;
 
     public ProcessedSampleWriter(String path, PreprocessorConfig config)
             throws IOException {

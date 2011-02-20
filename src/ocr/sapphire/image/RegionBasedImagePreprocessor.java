@@ -34,7 +34,7 @@ import static ocr.sapphire.util.Utils.getBounds;
  *
  * @author cumeo89
  */
-public class RegionBasedImagePreprocessor extends ImagePreprocessor {
+public class RegionBasedImagePreprocessor extends AbstractImagePreprocessor {
 
     private static final byte WHITE = (byte) 255;
     private static final byte BLACK = (byte) 0;
@@ -71,31 +71,9 @@ public class RegionBasedImagePreprocessor extends ImagePreprocessor {
         return image;
     }
 
-    /**
-     * <p>Rotate the component so that the first point is the leftmost.</p>
-     * <p>Normalization doesnot make difference when reverse the Fourier series
-     * but neuron networks may "feel" easier to recorgnize normalized series.</p>
-     * @param points
-     * @return
-     */
-    private static List<Point> normalize(List<Point> c) {
-        double corner = Double.MAX_VALUE;
-        for (Point p : c) {
-            if (p.x + p.y < corner) {
-                corner = p.x + p.y;
-            }
-        }
-        while (c.get(0).x + c.get(0).y > corner) {
-            c.add(c.remove(0));
-        }
-        return c;
-    }
-
     @Override
-    public double[][][] process(BufferedImage image) {
-        height = image.getHeight();
-        width = image.getWidth();
-        List<List<Point>> components = combinedContourLabeling(image);
+	protected List<List<Point>> extractComponents(BufferedImage image) {
+		List<List<Point>> components = combinedContourLabeling(image);
 
         // remove noise
         for (Iterator<List<Point>> it = components.iterator(); it.hasNext(); ) {
@@ -156,32 +134,8 @@ public class RegionBasedImagePreprocessor extends ImagePreprocessor {
                 }
             }
         }
-
-        SortedMap<Integer, List<Point>> componentMap = new TreeMap<Integer, List<Point>>();
-        for (List<Point> c : components) {
-            componentMap.put(-c.size(), c);
-        }
-
-        int usedComponentCount = Math.min(componentCount, componentMap.size());
-        componentArr = new Point[usedComponentCount][];
-        coefficients = new double[usedComponentCount][][];
-        Rectangle r = getBounds(componentMap.get(componentMap.firstKey()));
-        for (int c = 0; c < usedComponentCount; c++) {
-            int key = componentMap.firstKey();
-            componentArr[c] = new Point[componentMap.get(key).size()];
-            componentMap.get(key).toArray(componentArr[c]);
-
-            Point[] points = new Point[componentMap.get(key).size()];
-            for (int i = 0; i < points.length; i++) {
-                Point p = componentMap.get(key).get(i);
-                points[i] = new Point((p.x - r.x) / r.width, (p.y - r.y) / r.height);
-            }
-            coefficients[c] = fourierTransform(points);
-
-            componentMap.remove(key);
-        }
-        return coefficients;
-    }
+		return components;
+	}
 
     /**
      * Compute distance from a to b
