@@ -5,10 +5,10 @@ public class CharacterEigen {
 	private double[] main;
 	private double[][] auxiliaries;
 
-	private CharacterEigen(double[] main, double[][] auxilaries) {
+	public CharacterEigen(double[] main, double[][] auxiliaries) {
 		super();
 		this.main = main;
-		this.auxiliaries = auxilaries;
+		this.auxiliaries = auxiliaries;
 	}
 
 	public double[] getMain() {

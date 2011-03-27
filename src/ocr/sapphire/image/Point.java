@@ -32,7 +32,7 @@ public class Point {
         this.y = y;
     }
 
-    Point(Point p) {
+    public Point(Point p) {
         this(p.x, p.y);
     }
 
